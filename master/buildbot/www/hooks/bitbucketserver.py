@@ -71,6 +71,7 @@ class BitbucketServerEventHandler(object):
                 'branch': change['new']['name'],
                 # 'revlink': '', 
                 'repository': repository,
+                'category' : 'push',
                 'project': project
             })
             log.msg('New revision: %s' % (change['new']['target']['hash'],))
