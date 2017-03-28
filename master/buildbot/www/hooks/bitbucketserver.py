@@ -90,7 +90,7 @@ class BitbucketServerEventHandler(object):
         change = {
             'revision': None,
             # 'when_timestamp': dateparse(payload['pullrequest'][timestamp_key]),
-            'revlink': payload['pullrequest']['fromRef']['repository']['links']['self'][0]['href'],
+            'revlink': payload['pullrequest']['link'],
             'repository': payload['pullrequest']['fromRef']['repository']['fullName'].split('/')[-1],  # The clone URL used to match in change filter
             'branch' : refname,
             'project': payload['repository']['project']['name'],
