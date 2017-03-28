@@ -1,0 +1,162 @@
+# This file is part of Buildbot.  Buildbot is free software: you can
+# redistribute it and/or modify it under the terms of the GNU General Public
+# License as published by the Free Software Foundation, version 2.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# Copyright Buildbot Team Members
+# Copyright Mamba Team
+import logging
+from dateutil.parser import parse as dateparse
+
+from twisted.python import log
+
+from buildbot.util import json
+
+
+_HEADER_CT = 'Content-Type'
+_HEADER_EVENT = 'X-Event-Key'
+
+class BitbucketServerEventHandler(object):
+
+    def __init__(self, codebase=None):
+        self._codebase = codebase
+
+    def process(self, request):
+        payload = self._get_payload(request)
+        event_type = request.getHeader(_HEADER_EVENT)
+        print("Processing event %s: %r" % (_HEADER_EVENT, event_type,))
+        event_type = event_type.replace(":", "_")
+        handler = getattr(self, 'handle_%s' % event_type, None)
+
+        if handler is None:
+            raise ValueError('Unknown event: %r' % (event_type,))
+
+        return handler(payload)
+
+    def _get_payload(self, request):
+        content = request.content.read()
+        content_type = request.getHeader(_HEADER_CT)
+        if content_type.startswith('application/json'):
+            payload = json.loads(content)
+        elif content_type.startswith('application/x-www-form-urlencoded'):
+            payload = json.loads(request.args['payload'][0])
+        else:
+            raise ValueError('Unknown content type: %r' % (content_type,))
+
+        print("Payload: %r" % payload)
+
+        return payload
+
+
+    def handle_repo_push(self, payload):
+        changes = []
+        repository = payload['repository']['fullName'].split('/')[-1]
+        project = payload['repository']['project']['name']
+        author=payload['actor']['username']
+        for change in payload['push']['changes']:
+            changes.append({
+                'author': "%s <%s>" %
+                (payload['actor']['displayName'],payload['actor']['username']),
+                # 'files': [f['path']['toString'] for f in commit['changes']['values']],
+                'comments': '',
+                'revision': change['new']['target']['hash'],
+                # 'when_timestamp': commit['toCommit']['authorTimestamp'],
+                'branch': change['new']['name'],
+                # 'revlink': '', 
+                'repository': repository,
+                'project': project
+            })
+            log.msg('New revision: %s' % (change['new']['target']['hash'],))
+        log.msg('Received %s changes from bitbucket' % (len(changes),))
+        return (changes, payload['repository']['scmId'])
+
+    def handle_pullrequest_created(self, payload):
+        return self.handle_pullrequest(payload)
+
+    def handle_pullrequest_updated(self, payload):
+        return self.handle_pullrequest(payload)
+
+    def handle_pullrequest(self, payload):
+        changes = []
+        pr_number = int(payload['pullrequest']['id'])
+        change = {
+            'revision': payload['pullrequest']['fromRef']['commit']['hash'],
+            # 'when_timestamp': dateparse(payload['pullrequest'][timestamp_key]),
+            'revlink': payload['pullrequest']['fromRef']['repository']['links']['self'][0]['href'],
+            'repository':
+            payload['pullrequest']['fromRef']['repository']['fullName'].split('/')[-1],  # The clone URL used to match in change filter
+            'project': payload['repository']['project']['name'],
+            'category': 'pull',
+            'author': '%s <%s>' % (payload['actor']['displayName'],
+                                   payload['actor']['username']),
+            'comments': 'Bitbucket Pull Request #%d' % (pr_number, ),
+        }
+
+        if callable(self._codebase):
+            change['codebase'] = self._codebase(payload)
+        elif self._codebase is not None:
+            change['codebase'] = self._codebase
+
+        changes.append(change)
+
+        log.msg("Received %d changes from Bitbucket PR #%d" % (
+            len(changes), pr_number))
+        return changes, payload['repository']['scmId']
+
+
+def processPostService(request, options=None):
+    """Catch a POST service request from BitBucket and start a build process
+
+    Check the URL below if you require more information about payload
+    https://confluence.atlassian.com/display/BITBUCKET/POST+Service+Management
+
+    :param request: the http request Twisted object
+    :param options: additional options
+    """
+    payload = json.loads(request.args['payload'][0])
+    repo_url = '%s%s' % (
+        payload['canon_url'], payload['repository']['absolute_url'])
+    project = request.args.get('project', [''])[0]
+
+    changes = []
+    for commit in payload['commits']:
+        changes.append({
+            'author': commit['raw_author'],
+            'files': [f['file'] for f in commit['files']],
+            'comments': commit['message'],
+            'revision': commit['raw_node'],
+            'when_timestamp': dateparse(commit['utctimestamp']),
+            'branch': commit['branch'],
+            'revlink': '%scommits/%s' % (repo_url, commit['raw_node']),
+            'repository': repo_url,
+            'project': project
+        })
+        log.msg('New revision: %s' % (commit['node'],))
+
+    log.msg('Received %s changes from bitbucket' % (len(changes),))
+    return (changes, payload['repository']['scm'])
+
+
+def getChanges(request, options=None):
+    """
+    Process the Bitbucket webhook event.
+
+    :param twisted.web.server.Request request: the http request object
+
+    """
+    if not isinstance(options, dict):
+        options = {}
+
+    if 'payload' in request.args:
+        return processPostService(request)
+    klass = options.get('class', BitbucketServerEventHandler)
+    handler = klass(options.get('codebase', None))
+    return handler.process(request)
