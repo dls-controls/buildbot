@@ -88,7 +88,7 @@ class BitbucketServerEventHandler(object):
         pr_number = int(payload['pullrequest']['id'])
         refname = "refs/pull-requests/%d/merge" % pr_number
         change = {
-            # 'revision': 'FETCH_HEAD',
+            'revision': None,
             # 'when_timestamp': dateparse(payload['pullrequest'][timestamp_key]),
             'revlink': payload['pullrequest']['fromRef']['repository']['links']['self'][0]['href'],
             'repository': payload['pullrequest']['fromRef']['repository']['fullName'].split('/')[-1],  # The clone URL used to match in change filter
