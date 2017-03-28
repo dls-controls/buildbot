@@ -54,6 +54,10 @@ class StashStatusPush(http.HttpStatusPushBase):
     def send(self, build):
         props = Properties.fromDict(build['properties'])
         results = build['results']
+        try:
+            got_revision = build['properties']['got_revision'][0]
+        except KeyError:
+            got_revision = None
         if build['complete']:
             status = STASH_SUCCESSFUL if results == SUCCESS else STASH_FAILED
             description = self.endDescription
@@ -61,7 +65,7 @@ class StashStatusPush(http.HttpStatusPushBase):
             status = STASH_INPROGRESS
             description = self.startDescription
         for sourcestamp in build['buildset']['sourcestamps']:
-            sha = sourcestamp['revision']
+            sha = sourcestamp['revision'] or got_revision
             key = yield props.render(self.key)
             payload = {
                 'state': status,

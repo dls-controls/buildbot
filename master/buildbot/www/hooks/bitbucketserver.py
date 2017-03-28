@@ -55,7 +55,6 @@ class BitbucketServerEventHandler(object):
 
         return payload
 
-
     def handle_repo_push(self, payload):
         changes = []
         repository = payload['repository']['fullName'].split('/')[-1]
@@ -87,12 +86,13 @@ class BitbucketServerEventHandler(object):
     def handle_pullrequest(self, payload):
         changes = []
         pr_number = int(payload['pullrequest']['id'])
+        refname = "refs/pull-requests/%d/merge" % pr_number
         change = {
-            'revision': payload['pullrequest']['fromRef']['commit']['hash'],
+            # 'revision': 'FETCH_HEAD',
             # 'when_timestamp': dateparse(payload['pullrequest'][timestamp_key]),
             'revlink': payload['pullrequest']['fromRef']['repository']['links']['self'][0]['href'],
-            'repository':
-            payload['pullrequest']['fromRef']['repository']['fullName'].split('/')[-1],  # The clone URL used to match in change filter
+            'repository': payload['pullrequest']['fromRef']['repository']['fullName'].split('/')[-1],  # The clone URL used to match in change filter
+            'branch' : refname,
             'project': payload['repository']['project']['name'],
             'category': 'pull',
             'author': '%s <%s>' % (payload['actor']['displayName'],
@@ -110,39 +110,6 @@ class BitbucketServerEventHandler(object):
         log.msg("Received %d changes from Bitbucket PR #%d" % (
             len(changes), pr_number))
         return changes, payload['repository']['scmId']
-
-
-def processPostService(request, options=None):
-    """Catch a POST service request from BitBucket and start a build process
-
-    Check the URL below if you require more information about payload
-    https://confluence.atlassian.com/display/BITBUCKET/POST+Service+Management
-
-    :param request: the http request Twisted object
-    :param options: additional options
-    """
-    payload = json.loads(request.args['payload'][0])
-    repo_url = '%s%s' % (
-        payload['canon_url'], payload['repository']['absolute_url'])
-    project = request.args.get('project', [''])[0]
-
-    changes = []
-    for commit in payload['commits']:
-        changes.append({
-            'author': commit['raw_author'],
-            'files': [f['file'] for f in commit['files']],
-            'comments': commit['message'],
-            'revision': commit['raw_node'],
-            'when_timestamp': dateparse(commit['utctimestamp']),
-            'branch': commit['branch'],
-            'revlink': '%scommits/%s' % (repo_url, commit['raw_node']),
-            'repository': repo_url,
-            'project': project
-        })
-        log.msg('New revision: %s' % (commit['node'],))
-
-    log.msg('Received %s changes from bitbucket' % (len(changes),))
-    return (changes, payload['repository']['scm'])
 
 
 def getChanges(request, options=None):
