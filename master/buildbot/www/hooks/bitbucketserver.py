@@ -122,8 +122,5 @@ def getChanges(request, options=None):
     if not isinstance(options, dict):
         options = {}
 
-    if 'payload' in request.args:
-        return processPostService(request)
-    klass = options.get('class', BitbucketServerEventHandler)
-    handler = klass(options.get('codebase', None))
+    handler = BitbucketServerEventHandler(options.get('codebase', None))
     return handler.process(request)
