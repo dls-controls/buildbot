@@ -60,6 +60,7 @@ class BitbucketServerEventHandler(object):
         repository = payload['repository']['fullName'].split('/')[-1]
         project = payload['repository']['project']['name']
         author=payload['actor']['username']
+        repo_url=payload['repository']['links']['self'][0]['href'].rstrip('/browse')
         for change in payload['push']['changes']:
             changes.append({
                 'author': "%s <%s>" %
@@ -70,7 +71,7 @@ class BitbucketServerEventHandler(object):
                 # 'when_timestamp': commit['toCommit']['authorTimestamp'],
                 'branch': change['new']['name'],
                 # 'revlink': '', 
-                'repository': repository,
+                'repository': repo_url,
                 'category' : 'push',
                 'project': project
             })
@@ -88,11 +89,12 @@ class BitbucketServerEventHandler(object):
         changes = []
         pr_number = int(payload['pullrequest']['id'])
         refname = "refs/pull-requests/%d/merge" % pr_number
+        repo_url=payload['repository']['links']['self'][0]['href'].rstrip('/browse')
         change = {
             'revision': None,
             # 'when_timestamp': dateparse(payload['pullrequest'][timestamp_key]),
             'revlink': payload['pullrequest']['link'],
-            'repository': payload['pullrequest']['fromRef']['repository']['fullName'].split('/')[-1],  # The clone URL used to match in change filter
+            'repository': repo_url, 
             'branch' : refname,
             'project': payload['repository']['project']['name'],
             'category': 'pull',
