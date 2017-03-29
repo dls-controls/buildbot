@@ -64,7 +64,7 @@ class BitbucketServerEventHandler(object):
         for change in payload['push']['changes']:
             changes.append({
                 'author': "%s <%s>" %
-                (payload['actor']['displayName'],payload['actor']['username']),
+                (payload['actor']['displayName'], payload['actor']['username']),
                 # 'files': [f['path']['toString'] for f in commit['changes']['values']],
                 'comments': '',
                 'revision': change['new']['target']['hash'],
@@ -102,6 +102,7 @@ class BitbucketServerEventHandler(object):
             'author': '%s <%s>' % (payload['actor']['displayName'],
                                    payload['actor']['username']),
             'comments': 'Bitbucket Pull Request #%d' % (pr_number, ),
+            'properties' : { 'pr_comment' : payload['pullrequest']['link'] }
         }
 
         if callable(self._codebase):
