@@ -70,7 +70,8 @@ class BitbucketServerEventHandler(object):
                 'revision': change['new']['target']['hash'],
                 # 'when_timestamp': commit['toCommit']['authorTimestamp'],
                 'branch': change['new']['name'],
-                # 'revlink': '', 
+                'revlink': '%s/commits/%s' % (repo_url,
+                    change['new']['target']['hash']),
                 'repository': repo_url,
                 'category' : 'push',
                 'project': project
