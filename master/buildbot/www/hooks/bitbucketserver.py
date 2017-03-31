@@ -23,10 +23,13 @@ import json
 _HEADER_CT = 'Content-Type'
 _HEADER_EVENT = 'X-Event-Key'
 
+_PR_COMMENT_OPT = "pull_request_comment"
+
 class BitbucketServerEventHandler(object):
 
-    def __init__(self, codebase=None):
+    def __init__(self, codebase=None, options={}):
         self._codebase = codebase
+        self.options = options
 
     def process(self, request):
         payload = self._get_payload(request)
@@ -101,8 +104,13 @@ class BitbucketServerEventHandler(object):
             'author': '%s <%s>' % (payload['actor']['displayName'],
                                    payload['actor']['username']),
             'comments': 'Bitbucket Pull Request #%d' % (pr_number, ),
-            'properties' : { 'pr_comment' : payload['pullrequest']['link'] }
+            'properties' : { }
         }
+
+        if _PR_COMMENT_OPT in self.options:
+            change['properties'][_PR_COMMENT_OPT] = {}
+            change['properties'][_PR_COMMENT_OPT]['url'] = payload['pullrequest']['link'] 
+            change['properties'][_PR_COMMENT_OPT]['text'] = self.options[_PR_COMMENT_OPT]
 
         if callable(self._codebase):
             change['codebase'] = self._codebase(payload)
@@ -126,5 +134,6 @@ def getChanges(request, options=None):
     if not isinstance(options, dict):
         options = {}
 
-    handler = BitbucketServerEventHandler(options.get('codebase', None))
+    handler = BitbucketServerEventHandler(options.get('codebase', None),
+            options)
     return handler.process(request)

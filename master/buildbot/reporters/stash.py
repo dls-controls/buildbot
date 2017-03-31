@@ -25,6 +25,8 @@ from buildbot.reporters import http
 from buildbot.util import httpclientservice
 from buildbot.util.logger import Logger
 
+from buildbot.www.hooks.bitbucketserver import _PR_COMMENT_OPT
+
 import re
 
 log = Logger()
@@ -71,7 +73,7 @@ class StashStatusPush(http.HttpStatusPushBase):
             if sha is None:
                 log.error("Unable to get commit hash")
                 continue
-            if build['complete'] and ('pr_comment' in build['properties']):
+            if build['complete'] and (_PR_COMMENT_OPT in build['properties']):
                 yield self.sendPullRequestComment(build, sha)
             key = yield props.render(self.key)
             payload = {
@@ -96,15 +98,16 @@ class StashStatusPush(http.HttpStatusPushBase):
 
     @defer.inlineCallbacks
     def sendPullRequestComment(self, build, commitId):
-        pr_url=build['properties']['pr_comment'][0]
-        match = re.search("^(http|https)://([^/]+)/(.+)$", pr_url)
+        pr_properties=build['properties'][_PR_COMMENT_OPT][0]
+        match = re.search("^(http|https)://([^/]+)/(.+)$", pr_properties['url'])
         if not match:
-            log.error("not valid pull request URL: %s" % (pr_url))
+            log.error("not valid pull request URL: %s" % (pr_properties['url']))
             return
         path = match.group(3)
+        merged_link = "%scommits/%s" % (build['properties']['repository'][0],commitId)
         payload = {
-                'text' : 'Merged commit: %scommits/%s' %
-                (build['properties']['repository'][0], commitId) 
+                'text' : pr_properties['text'].format( 
+                merged_link=merged_link)
                 }
         response = yield self._http.post('/rest/api/1.0/%s/comments' % (path),
                                           json=payload)
