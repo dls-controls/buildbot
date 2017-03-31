@@ -18,8 +18,7 @@ from dateutil.parser import parse as dateparse
 
 from twisted.python import log
 
-from buildbot.util import json
-
+import json
 
 _HEADER_CT = 'Content-Type'
 _HEADER_EVENT = 'X-Event-Key'
@@ -60,7 +59,7 @@ class BitbucketServerEventHandler(object):
         repository = payload['repository']['fullName'].split('/')[-1]
         project = payload['repository']['project']['name']
         author=payload['actor']['username']
-        repo_url=payload['repository']['links']['self'][0]['href'].rstrip('/browse')
+        repo_url=payload['repository']['links']['self'][0]['href'].rstrip('browse')
         for change in payload['push']['changes']:
             changes.append({
                 'author': "%s <%s>" %
@@ -70,7 +69,7 @@ class BitbucketServerEventHandler(object):
                 'revision': change['new']['target']['hash'],
                 # 'when_timestamp': commit['toCommit']['authorTimestamp'],
                 'branch': change['new']['name'],
-                'revlink': '%s/commits/%s' % (repo_url,
+                'revlink': '%scommits/%s' % (repo_url,
                     change['new']['target']['hash']),
                 'repository': repo_url,
                 'category' : 'push',
@@ -90,7 +89,7 @@ class BitbucketServerEventHandler(object):
         changes = []
         pr_number = int(payload['pullrequest']['id'])
         refname = "refs/pull-requests/%d/merge" % pr_number
-        repo_url=payload['repository']['links']['self'][0]['href'].rstrip('/browse')
+        repo_url=payload['repository']['links']['self'][0]['href'].rstrip('browse')
         change = {
             'revision': None,
             # 'when_timestamp': dateparse(payload['pullrequest'][timestamp_key]),

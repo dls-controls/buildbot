@@ -103,7 +103,7 @@ class StashStatusPush(http.HttpStatusPushBase):
             return
         path = match.group(3)
         payload = {
-                'text' : 'Merged commit: %s/commits/%s' %
+                'text' : 'Merged commit: %scommits/%s' %
                 (build['properties']['repository'][0], commitId) 
                 }
         response = yield self._http.post('/rest/api/1.0/%s/comments' % (path),
