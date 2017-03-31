@@ -99,6 +99,7 @@ class StashStatusPush(http.HttpStatusPushBase):
         pr_url=build['properties']['pr_comment'][0]
         match = re.search("^(http|https)://([^/]+)/(.+)$", pr_url)
         if not match:
+            log.error("not valid pull request URL: %s" % (pr_url))
             return
         path = match.group(3)
         payload = {
@@ -109,5 +110,5 @@ class StashStatusPush(http.HttpStatusPushBase):
                                           json=payload)
         if response.code != 201:
             content = yield response.content()
-            log.error("{code}: Unable to send comment: {content}",
+            log.error("{code}: Unable to post the comment: {content}",
                       code=response.code, content=content)
