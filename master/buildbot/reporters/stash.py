@@ -105,9 +105,11 @@ class StashStatusPush(http.HttpStatusPushBase):
             return
         path = match.group(3)
         merged_link = "%scommits/%s" % (build['properties']['repository'][0],commitId)
+        status = "SUCCESS" if build['results']==SUCCESS else "FAILED"
+        text = pr_properties['text']
         payload = {
-                'text' : pr_properties['text'].format( 
-                merged_link=merged_link)
+                'text' : text.format( 
+                merged_link=merged_link, status=status)
                 }
         response = yield self._http.post('/rest/api/1.0/%s/comments' % (path),
                                           json=payload)

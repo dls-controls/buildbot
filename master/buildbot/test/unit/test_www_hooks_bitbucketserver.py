@@ -134,8 +134,8 @@ class TestChangeHookConfiguredWithBitbucketServerChange(unittest.TestCase):
         self.assertEqual(
             commit['repository'],
             'http://localhost:7990/users/john/repos/good-repo/')
-        # self.assertEqual(
-        #    commit['author'], 'Marcus Bertrand <marcus@somedomain.com>')
+        self.assertEqual(
+           commit['author'], 'John Smith <John>')
         self.assertEqual(
             commit['revision'], 'd156103f161e80ea351023e5e8d9bcb86f37924e')
         # self.assertEqual(
