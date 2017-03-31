@@ -68,7 +68,8 @@ class BitbucketServerEventHandler(object):
                 'author': "%s <%s>" %
                 (payload['actor']['displayName'], payload['actor']['username']),
                 # 'files': [f['path']['toString'] for f in commit['changes']['values']],
-                'comments': '',
+                'comments': 'Bitbucket Server commit %s' %
+                change['new']['target']['hash'],
                 'revision': change['new']['target']['hash'],
                 # 'when_timestamp': commit['toCommit']['authorTimestamp'],
                 'branch': change['new']['name'],
@@ -103,7 +104,7 @@ class BitbucketServerEventHandler(object):
             'category': 'pull',
             'author': '%s <%s>' % (payload['actor']['displayName'],
                                    payload['actor']['username']),
-            'comments': 'Bitbucket Pull Request #%d' % (pr_number, ),
+            'comments': 'Bitbucket Server Pull Request #%d' % (pr_number, ),
             'properties' : { }
         }
 

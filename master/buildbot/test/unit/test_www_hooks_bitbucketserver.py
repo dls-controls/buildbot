@@ -138,8 +138,8 @@ class TestChangeHookConfiguredWithBitbucketServerChange(unittest.TestCase):
            commit['author'], 'John Smith <John>')
         self.assertEqual(
             commit['revision'], 'd156103f161e80ea351023e5e8d9bcb86f37924e')
-        # self.assertEqual(
-        #    commit['comments'], 'Added some more things to somefile.py')
+        self.assertEqual(
+            commit['comments'], 'Bitbucket Server commit d156103f161e80ea351023e5e8d9bcb86f37924e')
         self.assertEqual(commit['branch'], 'master')
         self.assertEqual(
             commit['revlink'],
