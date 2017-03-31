@@ -108,7 +108,7 @@ class BitbucketServerEventHandler(object):
             'properties' : { }
         }
 
-        if _PR_COMMENT_OPT in self.options:
+        if self.options.get(_PR_COMMENT_OPT,None):
             change['properties'][_PR_COMMENT_OPT] = {}
             change['properties'][_PR_COMMENT_OPT]['url'] = payload['pullrequest']['link'] 
             change['properties'][_PR_COMMENT_OPT]['text'] = self.options[_PR_COMMENT_OPT]

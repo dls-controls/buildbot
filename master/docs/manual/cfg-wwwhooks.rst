@@ -197,6 +197,34 @@ Then, create a BitBucket service hook (see https://confluence.atlassian.com/disp
 
 Note that as before, not using ``change_hook_auth`` can expose you to security risks.
 
+Bitbucket Server hook
++++++++++++++++++++++
+
+.. code-block:: python
+
+    c['www'] = dict(
+        ...,
+        change_hook_dialects={'bitbucketserver': {}},
+    )
+
+When this is setup you should add a webhook pointing to ``/change_hook/bitbucketserver`` relative to the root of the web status.
+
+The Bitbucket Server hook may have the following optional parameters:
+
+``codebase`` (default `None`)
+    The codebase value to include with created changes.
+
+``pull_request_comment`` (default `None`)
+    The comment that will be posted on every pull request. You can use {merged_link} and {status} to get the corresponding values.
+    You need to set :py:class:`StashStatusPush` in your master configuration and the authentication included there will be used to comment.
+    
+.. Warning::
+    The incoming HTTP requests for this hook are not authenticated by default.
+    Anyone who can access the web server can "fake" a request from GitHub, potentially causing the buildmaster to run arbitrary code
+
+.. Note::
+    This hook is based on the bitbucket-webhooks plugin which is not included by default in Bitbucket Server
+
 Poller hook
 +++++++++++
 

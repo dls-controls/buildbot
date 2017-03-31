@@ -106,7 +106,7 @@ class StashStatusPush(http.HttpStatusPushBase):
         path = match.group(3)
         merged_link = "%scommits/%s" % (build['properties']['repository'][0],commitId)
         status = "SUCCESS" if build['results']==SUCCESS else "FAILED"
-        text = pr_properties['text']
+        text = str(pr_properties['text'])
         payload = {
                 'text' : text.format( 
                 merged_link=merged_link, status=status)
