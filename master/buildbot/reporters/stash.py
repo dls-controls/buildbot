@@ -24,9 +24,6 @@ from buildbot.process.results import SUCCESS
 from buildbot.reporters import http
 from buildbot.util import httpclientservice
 from buildbot.util.logger import Logger
-
-from buildbot.www.hooks.bitbucketserver import _PR_COMMENT_OPT
-
 import re
 
 log = Logger()
@@ -73,7 +70,7 @@ class StashStatusPush(http.HttpStatusPushBase):
             if sha is None:
                 log.error("Unable to get commit hash")
                 continue
-            if build['complete'] and (_PR_COMMENT_OPT in build['properties']):
+            if build['complete'] and build['properties'].get("pull_request_url"):
                 yield self.sendPullRequestComment(build, sha)
             key = yield props.render(self.key)
             payload = {
@@ -98,15 +95,19 @@ class StashStatusPush(http.HttpStatusPushBase):
 
     @defer.inlineCallbacks
     def sendPullRequestComment(self, build, commitId):
-        pr_properties=build['properties'][_PR_COMMENT_OPT][0]
-        match = re.search("^(http|https)://([^/]+)/(.+)$", pr_properties['url'])
+        pr_url=build['properties'].get("pull_request_url")
+        if not pr_url:
+            log.error("pull request url required to send a comment")
+            return
+        pr_url = pr_url[0]
+        match = re.search("^(http|https)://([^/]+)/(.+)$", pr_url)
         if not match:
-            log.error("not valid pull request URL: %s" % (pr_properties['url']))
+            log.error("not valid pull request URL: %s" % (pr_url,))
             return
         path = match.group(3)
         merged_link = "%scommits/%s" % (build['properties']['repository'][0],commitId)
         status = "SUCCESS" if build['results']==SUCCESS else "FAILED"
-        text = str(pr_properties['text'])
+        text = "Merged Commit Link: {merged_link}    Status: {status}"
         payload = {
                 'text' : text.format( 
                 merged_link=merged_link, status=status)
@@ -115,5 +116,5 @@ class StashStatusPush(http.HttpStatusPushBase):
                                           json=payload)
         if response.code != 201:
             content = yield response.content()
-            log.error("{code}: Unable to post the comment: {content}",
+            log.error("{code}: Unable to send any comment: {content}",
                       code=response.code, content=content)

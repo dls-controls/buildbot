@@ -23,8 +23,6 @@ import json
 _HEADER_CT = 'Content-Type'
 _HEADER_EVENT = 'X-Event-Key'
 
-_PR_COMMENT_OPT = "pull_request_comment"
-
 class BitbucketServerEventHandler(object):
 
     def __init__(self, codebase=None, options={}):
@@ -105,13 +103,9 @@ class BitbucketServerEventHandler(object):
             'author': '%s <%s>' % (payload['actor']['displayName'],
                                    payload['actor']['username']),
             'comments': 'Bitbucket Server Pull Request #%d' % (pr_number, ),
-            'properties' : { }
+            'properties' : { "pull_request_url" :
+                payload['pullrequest']['link'] }
         }
-
-        if self.options.get(_PR_COMMENT_OPT,None):
-            change['properties'][_PR_COMMENT_OPT] = {}
-            change['properties'][_PR_COMMENT_OPT]['url'] = payload['pullrequest']['link'] 
-            change['properties'][_PR_COMMENT_OPT]['text'] = self.options[_PR_COMMENT_OPT]
 
         if callable(self._codebase):
             change['codebase'] = self._codebase(payload)
