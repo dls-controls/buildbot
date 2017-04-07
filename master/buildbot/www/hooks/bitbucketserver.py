@@ -65,11 +65,9 @@ class BitbucketServerEventHandler(object):
             changes.append({
                 'author': "%s <%s>" %
                 (payload['actor']['displayName'], payload['actor']['username']),
-                # 'files': [f['path']['toString'] for f in commit['changes']['values']],
                 'comments': 'Bitbucket Server commit %s' %
                 change['new']['target']['hash'],
                 'revision': change['new']['target']['hash'],
-                # 'when_timestamp': commit['toCommit']['authorTimestamp'],
                 'branch': change['new']['name'],
                 'revlink': '%scommits/%s' % (repo_url,
                     change['new']['target']['hash']),
@@ -82,19 +80,26 @@ class BitbucketServerEventHandler(object):
         return (changes, payload['repository']['scmId'])
 
     def handle_pullrequest_created(self, payload):
-        return self.handle_pullrequest(payload)
+        return self.handle_pullrequest(
+                payload, 
+                "refs/pull-requests/%d/merge" % (int(payload['pullrequest']['id']),))
 
     def handle_pullrequest_updated(self, payload):
-        return self.handle_pullrequest(payload)
+        return self.handle_pullrequest(
+                payload, 
+                "refs/pull-requests/%d/merge" % (int(payload['pullrequest']['id']),))
 
-    def handle_pullrequest(self, payload):
+    def handle_pullrequest_fulfilled(self, payload):
+        return self.handle_pullrequest(
+                payload, 
+                "refs/heads/%s" % (payload['pullrequest']['toRef']['branch']['name'],))
+
+    def handle_pullrequest(self, payload, refname):
         changes = []
         pr_number = int(payload['pullrequest']['id'])
-        refname = "refs/pull-requests/%d/merge" % pr_number
         repo_url=payload['repository']['links']['self'][0]['href'].rstrip('browse')
         change = {
             'revision': None,
-            # 'when_timestamp': dateparse(payload['pullrequest'][timestamp_key]),
             'revlink': payload['pullrequest']['link'],
             'repository': repo_url, 
             'branch' : refname,
