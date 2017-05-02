@@ -91,8 +91,11 @@ class BitbucketServerEventHandler(object):
 
     def handle_pullrequest_fulfilled(self, payload):
         return self.handle_pullrequest(
-                payload, 
+                payload,
                 "refs/heads/%s" % (payload['pullrequest']['toRef']['branch']['name'],))
+
+    def handle_pullrequest_rejected(self, payload):
+        return (None, payload['repository']['scmId']) # a rejected pull request doesn't change the repository tree
 
     def handle_pullrequest(self, payload, refname):
         changes = []
