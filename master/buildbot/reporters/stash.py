@@ -56,7 +56,7 @@ class StashStatusPush(http.HttpStatusPushBase):
         props = Properties.fromDict(build['properties'])
         results = build['results']
         try:
-            got_revision = build['properties']['got_revision'][0]
+            got_revision = props.getProperty('got_revision')
         except KeyError:
             got_revision = None
         if build['complete']:
@@ -66,12 +66,14 @@ class StashStatusPush(http.HttpStatusPushBase):
             status = STASH_INPROGRESS
             description = self.startDescription
         for sourcestamp in build['buildset']['sourcestamps']:
-            sha = sourcestamp['revision'] or got_revision
+            if isinstance(got_revision, dict):
+                current_got_revision = got_revision[sourcestamp['codebase']]
+            else:
+                current_got_revision = got_revision
+            sha = sourcestamp['revision'] or current_got_revision
             if sha is None:
                 log.error("Unable to get commit hash")
                 continue
-            if build['complete'] and build['properties'].get("pull_request_url"):
-                yield self.sendPullRequestComment(build, sha)
             key = yield props.render(self.key)
             payload = {
                 'state': status,
@@ -93,28 +95,64 @@ class StashStatusPush(http.HttpStatusPushBase):
                 log.error("{code}: Unable to send Stash status: {content}",
                           code=response.code, content=content)
 
+
+class StashPRCommentPush(http.HttpStatusPushBase):
+    name = "StashPRCommentPush"
+
     @defer.inlineCallbacks
-    def sendPullRequestComment(self, build, commitId):
-        pr_url=build['properties'].get("pull_request_url")
-        if not pr_url:
-            log.error("pull request url required to send a comment")
-            return
-        pr_url = pr_url[0]
+    def reconfigService(self, base_url, user, password, text=None, statusName=None,
+                        startDescription=None, endDescription=None,
+                        verbose=False, **kwargs):
+        yield http.HttpStatusPushBase.reconfigService(self, wantProperties=True,
+                                                      **kwargs)
+        self.text = text or Interpolate('Builder: %(prop:buildername)s  Number: %(prop:buildnumber)s  '
+                                        'Link: %(prop:mergedlink)s  Status: %(prop:statustext)s')
+        self.statusName = statusName
+        self.endDescription = endDescription or 'Build done.'
+        self.startDescription = startDescription or 'Build started.'
+        self.verbose = verbose
+        self._http = yield httpclientservice.HTTPClientService.getService(
+            self.master, base_url, auth=(user, password))
+
+    @defer.inlineCallbacks
+    def send(self, build):
+        if build['complete'] \
+           and build['properties'].has_key("pullrequesturl") \
+           and build['properties'].has_key("got_revision"):
+                yield self.sendPullRequestComment(build)
+
+    @defer.inlineCallbacks
+    def sendPullRequestComment(self, build):
+        props = Properties.fromDict(build['properties'])
+        pr_url=props.getProperty("pullrequesturl")
+        got_revision = props.getProperty('got_revision')
         match = re.search("^(http|https)://([^/]+)/(.+)$", pr_url)
         if not match:
             log.error("not valid pull request URL: %s" % (pr_url,))
+            defer.returnValue(None)
             return
         path = match.group(3)
-        merged_link = "%scommits/%s" % (build['properties']['repository'][0],commitId)
+        if isinstance(got_revision, dict):
+            merged_link = []
+            for sourcestamp in build['buildset']['sourcestamps']:
+                merged_link.append("%s/commits/%s" % (sourcestamp['repository'].rstrip('/'),
+                                                     got_revision[sourcestamp['codebase']]))
+            merged_link = ' & '.join(merged_link)
+        else:
+            merged_link = "%s/commits/%s" % (props.getProperty('repository').rstrip('/'), got_revision)
         status = "SUCCESS" if build['results']==SUCCESS else "FAILED"
-        text = "Merged Commit Link: {merged_link}    Status: {status}"
+        props.setProperty('mergedlink', merged_link, self.name)
+        props.setProperty('statustext', status, self.name)
+        comment_text = yield props.render(self.text)
         payload = {
-                'text' : text.format( 
-                merged_link=merged_link, status=status)
+                'text' : comment_text
                 }
         response = yield self._http.post('/rest/api/1.0/%s/comments' % (path),
                                           json=payload)
-        if response.code != 201:
+        if response.code == 201:
+            log.info('{comment_text} sent for {got_revision}', comment_text=comment_text, got_revision=got_revision)
+        else:
             content = yield response.content()
             log.error("{code}: Unable to send any comment: {content}",
                       code=response.code, content=content)
+        defer.returnValue(None)
