@@ -32,7 +32,7 @@ class BitbucketServerEventHandler(object):
     def process(self, request):
         payload = self._get_payload(request)
         event_type = request.getHeader(_HEADER_EVENT)
-        print("Processing event %s: %r" % (_HEADER_EVENT, event_type,))
+        log.msg("Processing event %s: %r" % (_HEADER_EVENT, event_type,))
         event_type = event_type.replace(":", "_")
         handler = getattr(self, 'handle_%s' % event_type, None)
 
@@ -51,15 +51,13 @@ class BitbucketServerEventHandler(object):
         else:
             raise ValueError('Unknown content type: %r' % (content_type,))
 
-        print("Payload: %r" % payload)
+        log.msg("Payload: %r" % payload)
 
         return payload
 
     def handle_repo_push(self, payload):
         changes = []
-        repository = payload['repository']['fullName'].split('/')[-1]
         project = payload['repository']['project']['name']
-        author=payload['actor']['username']
         repo_url=payload['repository']['links']['self'][0]['href'].rstrip('browse')
         for change in payload['push']['changes']:
             changes.append({
@@ -76,7 +74,7 @@ class BitbucketServerEventHandler(object):
                 'project': project
             })
             log.msg('New revision: %s' % (change['new']['target']['hash'],))
-        log.msg('Received %s changes from bitbucket' % (len(changes),))
+        log.msg('Received %s changes from Bitbucket Server' % (len(changes),))
         return (changes, payload['repository']['scmId'])
 
     def handle_pullrequest_created(self, payload):
@@ -121,14 +119,14 @@ class BitbucketServerEventHandler(object):
 
         changes.append(change)
 
-        log.msg("Received %d changes from Bitbucket PR #%d" % (
+        log.msg("Received %d changes from Bitbucket Server PR #%d" % (
             len(changes), pr_number))
         return changes, payload['repository']['scmId']
 
 
 def getChanges(request, options=None):
     """
-    Process the Bitbucket webhook event.
+    Process the Bitbucket Server webhook event.
 
     :param twisted.web.server.Request request: the http request object
 
