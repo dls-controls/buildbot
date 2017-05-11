@@ -58,7 +58,7 @@ class BitbucketServerEventHandler(object):
     def handle_repo_push(self, payload):
         changes = []
         project = payload['repository']['project']['name']
-        repo_url=payload['repository']['links']['self'][0]['href'].rstrip('browse')
+        repo_url = payload['repository']['links']['self'][0]['href'].rstrip('browse')
         for change in payload['push']['changes']:
             changes.append({
                 'author': "%s <%s>" %
@@ -80,32 +80,38 @@ class BitbucketServerEventHandler(object):
     def handle_pullrequest_created(self, payload):
         return self.handle_pullrequest(
                 payload, 
-                "refs/pull-requests/%d/merge" % (int(payload['pullrequest']['id']),))
+                "refs/pull-requests/%d/merge" % (int(payload['pullrequest']['id']),),
+                "pull-created", None)
 
     def handle_pullrequest_updated(self, payload):
         return self.handle_pullrequest(
                 payload, 
-                "refs/pull-requests/%d/merge" % (int(payload['pullrequest']['id']),))
+                "refs/pull-requests/%d/merge" % (int(payload['pullrequest']['id']),),
+                "pull-updated", None)
 
     def handle_pullrequest_fulfilled(self, payload):
         return self.handle_pullrequest(
                 payload,
-                "refs/heads/%s" % (payload['pullrequest']['toRef']['branch']['name'],))
+                "refs/heads/%s" % (payload['pullrequest']['toRef']['branch']['name'],),
+                 "pull-fulfilled", None)
 
     def handle_pullrequest_rejected(self, payload):
-        return (None, payload['repository']['scmId']) # a rejected pull request doesn't change the repository tree
+        return self.handle_pullrequest(
+                payload,
+                "refs/heads/%s" % (payload['pullrequest']['fromRef']['branch']['name'],),
+                 "pull-rejected", payload['pullrequest']['fromRef']['commit']['hash'])
 
-    def handle_pullrequest(self, payload, refname):
+    def handle_pullrequest(self, payload, refname, category, revision):
         changes = []
         pr_number = int(payload['pullrequest']['id'])
-        repo_url=payload['repository']['links']['self'][0]['href'].rstrip('browse')
+        repo_url = payload['repository']['links']['self'][0]['href'].rstrip('browse')
         change = {
-            'revision': None,
+            'revision': revision,
             'revlink': payload['pullrequest']['link'],
             'repository': repo_url, 
             'branch' : refname,
             'project': payload['repository']['project']['name'],
-            'category': 'pull',
+            'category': category,
             'author': '%s <%s>' % (payload['actor']['displayName'],
                                    payload['actor']['username']),
             'comments': 'Bitbucket Server Pull Request #%d' % (pr_number, ),
