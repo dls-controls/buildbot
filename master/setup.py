@@ -23,15 +23,14 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import glob
+import inspect
 import os
 import pkg_resources
-import platform
 import sys
 from distutils.command.install_data import install_data
 from distutils.command.sdist import sdist
 from distutils.version import LooseVersion
 
-from setuptools import version as setuptools_version
 from setuptools import setup
 
 from buildbot import version
@@ -132,6 +131,7 @@ def define_plugin_entries(groups):
 
     return result
 
+__file__ = inspect.getframeinfo(inspect.currentframe()).filename
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as long_d_f:
     long_description = long_d_f.read()
@@ -165,6 +165,7 @@ setup_args = {
     'packages': [
         "buildbot",
         "buildbot.buildslave",
+        "buildbot.configurators",
         "buildbot.worker",
         "buildbot.worker.protocols",
         "buildbot.changes",
@@ -318,6 +319,8 @@ setup_args = {
         ]),
         ('buildbot.reporters', [
             ('buildbot.reporters.mail', ['MailNotifier']),
+            ('buildbot.reporters.pushjet', ['PushjetNotifier']),
+            ('buildbot.reporters.pushover', ['PushoverNotifier']),
             ('buildbot.reporters.message', ['MessageFormatter']),
             ('buildbot.reporters.gerrit', ['GerritStatusPush']),
             ('buildbot.reporters.gerrit_verify_status',
@@ -339,6 +342,7 @@ setup_args = {
                  'split_file_projects_branches'),
                 ('svn.split_file_branches', 'split_file_branches'),
                 ('svn.split_file_alwaystrunk', 'split_file_alwaystrunk')]),
+            ('buildbot.configurators.janitor', ['JanitorConfigurator']),
             ('buildbot.config', ['BuilderConfig']),
             ('buildbot.locks', [
                 'MasterLock',
@@ -529,7 +533,8 @@ if os.getenv('NO_INSTALL_REQS'):
     setup_args['install_requires'] = None
     setup_args['extras_require'] = None
 
-setup(**setup_args)
+if __name__ == '__main__':
+    setup(**setup_args)
 
 # Local Variables:
 # fill-column: 71

@@ -527,7 +527,7 @@ Here is an nginx configuration that is known to work (nginx 1.6.2):
             ssl_certificate_key /etc/nginx/ssl/server.key;
 
             # put a one day session timeout for websockets to stay longer
-            ssl_session_cache      shared:SSL:1440m;
+            ssl_session_cache      shared:SSL:10m;
             ssl_session_timeout  1440m;
 
             # please consult latest nginx documentation for current secure encryption settings
@@ -562,7 +562,10 @@ Here is an nginx configuration that is known to work (nginx 1.6.2):
 
 To run with Apache2, you'll need `mod_proxy_wstunnel <https://httpd.apache.org/docs/2.4/mod/mod_proxy_wstunnel.html>`_ in addition to `mod_proxy_http <https://httpd.apache.org/docs/2.4/mod/mod_proxy_http.html>`_. Serving HTTPS (`mod_ssl <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html>`_) is advised to prevent issues with enterprise proxies (see :ref:`SSE`), even if you don't need the encryption itself.
 
-Here is a configuration that is known to work (Apache 2.4.10 / Debian 8), directly at the top of the domain.
+Here is a configuration that is known to work (Apache 2.4.10 / Debian 8 and Apache 2.4.25 / Debian 9), directly at the top of the domain.
+
+If you want to add access control directives, just put them in a
+``<Location />``.
 
 .. code-block:: none
 
@@ -571,12 +574,9 @@ Here is a configuration that is known to work (Apache 2.4.10 / Debian 8), direct
         ServerName buildbot.example
         ServerAdmin webmaster@buildbot.example
 
-        <Location /ws>
-          ProxyPass ws://127.0.0.1:8020/ws
-          ProxyPassReverse ws://127.0.0.1:8020/ws
-        </Location>
-
-        ProxyPass /ws !
+        # replace with actual port of your Buildbot master
+        ProxyPass ws://127.0.0.1:8020/ws
+        ProxyPassReverse ws://127.0.0.1:8020/ws
         ProxyPass / http://127.0.0.1:8020/
         ProxyPassReverse / http://127.0.0.1:8020/
 
@@ -835,7 +835,7 @@ More complex config with separation per branch:
     )
     c['www']['authz'] = authz
 
-Using GitHub authentication and allowing access to control endpoints for users in the "BuildBot" organization:
+Using GitHub authentication and allowing access to control endpoints for users in the "Buildbot" organization:
 
 .. code-block:: python
 

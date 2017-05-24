@@ -6,6 +6,7 @@ admins
 afterwards
 al
 Allura
+AMIs
 analyse
 angularjs
 angularJS
@@ -18,12 +19,14 @@ apparmor
 appart
 apps
 ar
+aren
 arg
 args
 argv
 ascii
-Async
+AssertionFailed
 asymmetrics
+Async
 Async
 Atlassian
 attrs
@@ -43,6 +46,7 @@ backported
 balancer
 balancers
 basedir
+basestring
 Basestring
 basetgz
 baseURL
@@ -167,6 +171,8 @@ Config
 configs
 Configs
 configurability
+configurator
+configurators
 contrib
 Contrib
 coolproject
@@ -221,6 +227,8 @@ deserialization
 dev
 Dict
 dicts
+didn
+didn
 diff
 diffs
 dirname
@@ -238,6 +246,7 @@ Dockerfile
 dockerfiles
 docstring
 docstrings
+doesn
 dom
 downloadFile
 dropdown
@@ -299,8 +308,8 @@ getProperties
 getRecipients
 getters
 GiB
-GitHub
 github
+GitHub
 Gitlab
 Gitorious
 glMenuProvider
@@ -319,6 +328,7 @@ hardcode
 hardcoded
 hardcodes
 hardcoding
+hasn
 Hassler
 hierachy
 highlevel
@@ -347,6 +357,7 @@ influxDB
 informations
 infos
 infrormation
+ini
 init
 initialise
 initialzed
@@ -359,15 +370,17 @@ inrepo
 inrepos
 interCaps
 internet
-ini
+interoperable
 intialization
 io
 ip
+iPhone
 IProperties
 iptables
 irc
 Irc
 IRenderable
+isn
 iterable
 java
 javascript
@@ -458,6 +471,7 @@ Mixins
 mkdir
 mq
 Msbuild
+MsBuild
 msg
 mtime
 mtrlogobserver
@@ -465,8 +479,8 @@ mulitple
 multi
 Multi
 multiline
-Multimaster
 multimaster
+Multimaster
 munge
 mutualisation
 mv
@@ -543,6 +557,7 @@ peroidic
 persistant
 petmail
 Phantomjs
+PhantomJS
 phasis
 pidfile
 pids
@@ -584,6 +599,7 @@ psycopg
 Psycopg
 pubDate
 publically
+Pushjet
 py
 pyasn
 pyflakes
@@ -640,8 +656,8 @@ Repos
 repourl
 requeset
 resouce
-resultSpec
 reStructuredText
+resultSpec
 revertive
 revlink
 revlinks
@@ -661,7 +677,6 @@ sched
 schedulerid
 schedulerName
 schedulerNames
-unimportantSchedulerNames
 schemas
 scp
 searcheable
@@ -674,11 +689,13 @@ serviceid
 setDefaultWorkdir
 sha
 sherrif
+shouldn
 sighup
 signalled
 signalling
 sigtermTime
 skillsets
+SlaveBuilder
 slavename
 slavenames
 smoketest
@@ -758,8 +775,8 @@ templating
 temptatation
 testsuite
 textarea
-tgz
 tgrid
+tgz
 th
 timestamp
 Todo
@@ -798,6 +815,8 @@ uncomment
 unescaped
 unhandled
 unices
+unicode
+unimportantSchedulerNames
 unittest
 unittests
 unix
@@ -834,6 +853,7 @@ validator
 Validator
 validators
 Validators
+ValueError
 VC
 vcs
 VCS
@@ -854,9 +874,11 @@ Wamp
 wantSteps
 warner
 warningPattern
+wasn
 webapp
 webdav
 webhook
+webpack
 webserver
 websocket
 websvn
@@ -876,8 +898,10 @@ Wildcards
 workdir
 Workdir
 workdirs
+WorkerForBuilder
 workername
 workflow
+wouldn
 writting
 www
 xda

@@ -158,6 +158,23 @@ Arguments common to all :class:`BuildStep` subclasses:
     The character encoding to use to decode logs produced during the execution of this step.
     This overrides the default :bb:cfg:`logEncoding`; see :ref:`Log-Encodings`.
 
+.. index:: Buildstep Parameter; updateBuildSummaryPolicy
+
+``updateBuildSummaryPolicy``
+    The policy to use to propagate the step summary to the build summary.
+    If False, the build summary will never include step summary
+    If True, the build summary will always include step summary
+    If set to a list (e.g. ``[FAILURE, EXCEPTION]``), it will propagate if the step results id is present in that list.
+    If not set or None, the default is computed according to other BuildStep parameters using following algorithm::
+
+        self.updateBuildSummaryPolicy = [EXCEPTION, RETRY, CANCELLED]
+        if self.flunkOnFailure or self.haltOnFailure or self.warnOnFailure:
+            self.updateBuildSummaryPolicy.append(FAILURE)
+        if self.warnOnWarnings or self.flunkOnWarnings:
+            self.updateBuildSummaryPolicy.append(WARNINGS)
+
+    Note that in a custom step, if :py:meth:`BuildStep.getResultSummary` is overridden and setting the ``build`` summary, ``updateBuildSummaryPolicy`` is ignored and ``build`` summary will be used regardless.
+
 .. _Source-Checkout:
 
 Source Checkout
@@ -1638,7 +1655,7 @@ Available constructor arguments are:
     An array of custom parameters to pass directly to the ``robocopy`` command.
 
 ``verbose``
-    Whether to output verbose information (``/V /TS /TP`` parameters).
+    Whether to output verbose information (``/V /TS /FP`` parameters).
 
 Note that parameters ``/TEE /NP`` will always be appended to the command to signify, respectively, to output logging to the console, use Unicode logging, and not print any percentage progress information for each file.
 
@@ -2177,7 +2194,7 @@ Transferring Multiple Files At Once
 
 In addition to the :bb:step:`FileUpload` and :bb:step:`DirectoryUpload` steps there is the :bb:step:`MultipleFileUpload` step for uploading a bunch of files (and directories) in a single :class:`BuildStep`.
 The step supports all arguments that are supported by :bb:step:`FileUpload` and :bb:step:`DirectoryUpload`, but instead of a the single ``workersrc`` parameter it takes a (plural) ``workersrcs`` parameter.
-This parameter should either be a list, or something that can be rendered as a list.
+This parameter should either be a list, something that can be rendered as a list or a string which will be converted to a list.
 Additionally it supports the ``glob`` parameter if this parameter is set to ``True`` all arguments in ``workersrcs`` will be parsed through ``glob`` and the results will be uploaded to ``masterdest``.::
 
     from buildbot.plugins import steps
