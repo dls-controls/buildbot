@@ -59,21 +59,30 @@ class BitbucketServerEventHandler(object):
         changes = []
         project = payload['repository']['project']['name']
         repo_url = payload['repository']['links']['self'][0]['href'].rstrip('browse')
-        for change in payload['push']['changes']:
-            changes.append({
+
+        for payload_change in payload['push']['changes']:
+            change = {
                 'author': "%s <%s>" %
                 (payload['actor']['displayName'], payload['actor']['username']),
                 'comments': 'Bitbucket Server commit %s' %
-                change['new']['target']['hash'],
-                'revision': change['new']['target']['hash'],
-                'branch': change['new']['name'],
-                'revlink': '%scommits/%s' % (repo_url,
-                    change['new']['target']['hash']),
+                    payload_change['new']['target']['hash'],
+                'revision': payload_change['new']['target']['hash'],
+                'branch': payload_change['new']['name'],
+                'revlink': '%scommits/%s' %
+                    (repo_url, payload_change['new']['target']['hash']),
                 'repository': repo_url,
                 'category' : 'push',
                 'project': project
-            })
-            log.msg('New revision: %s' % (change['new']['target']['hash'],))
+            }
+
+            if callable(self._codebase):
+                change['codebase'] = self._codebase(payload)
+            elif self._codebase is not None:
+                change['codebase'] = self._codebase
+
+            changes.append(change)
+            log.msg('New revision: %s' % (change['revision'],))
+
         log.msg('Received %s changes from Bitbucket Server' % (len(changes),))
         return (changes, payload['repository']['scmId'])
 
