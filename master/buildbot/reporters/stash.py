@@ -123,11 +123,14 @@ class StashPRCommentPush(http.HttpStatusPushBase):
         pr_url = props.getProperty("pullrequesturl")
         got_revision = props.getProperty('got_revision')
         match = re.search("^(http|https)://([^/]+)/(.+)$", pr_url)
+
         if not match:
             log.error("not valid pull request URL: %s" % (pr_url,))
             defer.returnValue(None)
             return
+
         path = match.group(3)
+
         if isinstance(got_revision, dict):
             merged_link = []
             for sourcestamp in build['buildset']['sourcestamps']:
@@ -136,9 +139,12 @@ class StashPRCommentPush(http.HttpStatusPushBase):
             merged_link = ' & '.join(merged_link)
         else:
             merged_link = "%s/commits/%s" % (props.getProperty('repository').rstrip('/'), got_revision)
+
         status = "SUCCESS" if build['results']==SUCCESS else "FAILED"
         props.setProperty('mergedlink', merged_link, self.name)
         props.setProperty('statustext', status, self.name)
+        props.setProperty('url', build['url'], self.name)
+
         comment_text = yield props.render(self.text)
         payload = {
                 'text' : comment_text
