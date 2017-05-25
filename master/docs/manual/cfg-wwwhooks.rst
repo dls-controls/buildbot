@@ -209,18 +209,16 @@ Bitbucket Server hook
 
 When this is setup you should add a webhook pointing to ``/change_hook/bitbucketserver`` relative to the root of the web status.
 
+According to the type of the event, the change category is set to ``push``, ``pull-created``, ``pull-rejected``, ``pull-updated`` or ``pull-fulfilled``.
+
 The Bitbucket Server hook may have the following optional parameters:
 
 ``codebase`` (default `None`)
-    The codebase value to include with created changes.
-
-``pull_request_comment`` (default `None`)
-    The comment that will be posted on every pull request. You can use {merged_link} and {status} to get the corresponding values.
-    You need to set :py:class:`StashStatusPush` in your master configuration and the authentication included there will be used to comment.
+    The codebase value to include with changes or a callable object that will be passed the payload in order to get it.
     
 .. Warning::
     The incoming HTTP requests for this hook are not authenticated by default.
-    Anyone who can access the web server can "fake" a request from GitHub, potentially causing the buildmaster to run arbitrary code
+    Anyone who can access the web server can "fake" a request from Bitbucket Server, potentially causing the buildmaster to run arbitrary code
 
 .. Note::
     This hook is based on the bitbucket-webhooks plugin which is not included by default in Bitbucket Server

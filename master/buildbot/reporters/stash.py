@@ -102,8 +102,7 @@ class StashPRCommentPush(http.HttpStatusPushBase):
                         verbose=False, **kwargs):
         yield http.HttpStatusPushBase.reconfigService(self, wantProperties=True,
                                                       **kwargs)
-        self.text = text or Interpolate('Builder: %(prop:buildername)s  Number: %(prop:buildnumber)s  '
-                                        'Link: %(prop:mergedlink)s  Status: %(prop:statustext)s')
+        self.text = text or Interpolate('Builder: %(prop:buildername)s Status: %(prop:statustext)s')
         self.statusName = statusName
         self.endDescription = endDescription or 'Build done.'
         self.startDescription = startDescription or 'Build started.'
@@ -121,7 +120,7 @@ class StashPRCommentPush(http.HttpStatusPushBase):
     @defer.inlineCallbacks
     def sendPullRequestComment(self, build):
         props = Properties.fromDict(build['properties'])
-        pr_url=props.getProperty("pullrequesturl")
+        pr_url = props.getProperty("pullrequesturl")
         got_revision = props.getProperty('got_revision')
         match = re.search("^(http|https)://([^/]+)/(.+)$", pr_url)
         if not match:
