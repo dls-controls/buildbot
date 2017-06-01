@@ -113,8 +113,7 @@ class StashPRCommentPush(http.HttpStatusPushBase):
     @defer.inlineCallbacks
     def send(self, build):
         if build['complete'] \
-           and build['properties'].has_key("pullrequesturl") \
-           and build['properties'].has_key("got_revision"):
+           and build['properties'].has_key("pullrequesturl"):
                 yield self.sendPullRequestComment(build)
 
     @defer.inlineCallbacks
@@ -131,14 +130,17 @@ class StashPRCommentPush(http.HttpStatusPushBase):
 
         path = match.group(3)
 
-        if isinstance(got_revision, dict):
-            merged_link = []
-            for sourcestamp in build['buildset']['sourcestamps']:
-                merged_link.append("%s/commits/%s" % (sourcestamp['repository'].rstrip('/'),
-                                                     got_revision[sourcestamp['codebase']]))
-            merged_link = ' & '.join(merged_link)
+        if got_revision:
+            if isinstance(got_revision, dict):
+                merged_link = []
+                for sourcestamp in build['buildset']['sourcestamps']:
+                    merged_link.append("%s/commits/%s" % (sourcestamp['repository'].rstrip('/'),
+                                                         got_revision[sourcestamp['codebase']]))
+                merged_link = ' & '.join(merged_link)
+            else:
+                merged_link = "%s/commits/%s" % (props.getProperty('repository').rstrip('/'), got_revision)
         else:
-            merged_link = "%s/commits/%s" % (props.getProperty('repository').rstrip('/'), got_revision)
+            merged_link = '#'
 
         status = "SUCCESS" if build['results']==SUCCESS else "FAILED"
         props.setProperty('mergedlink', merged_link, self.name)
@@ -152,7 +154,7 @@ class StashPRCommentPush(http.HttpStatusPushBase):
         response = yield self._http.post('/rest/api/1.0/%s/comments' % (path),
                                           json=payload)
         if response.code == 201:
-            log.info('{comment_text} sent for {got_revision}', comment_text=comment_text, got_revision=got_revision)
+            log.info('{comment_text} sent to {pr_url}', comment_text=comment_text, pr_url=pr_url)
         else:
             content = yield response.content()
             log.error("{code}: Unable to send any comment: {content}",
