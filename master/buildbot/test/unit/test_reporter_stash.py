@@ -24,7 +24,7 @@ from twisted.trial import unittest
 from buildbot import config
 from buildbot.process.results import FAILURE
 from buildbot.process.results import SUCCESS
-from buildbot.reporters.stash import StashStatusPush
+from buildbot.reporters.stash import StashStatusPush, StashPRCommentPush
 from buildbot.test.fake import httpclientservice as fakehttpclientservice
 from buildbot.test.fake import fakemaster
 from buildbot.test.util.logging import LoggingMixin
@@ -137,3 +137,24 @@ class TestStashStatusPush(unittest.TestCase, ReporterTestMixin, LoggingMixin):
         self.setUpLogging()
         self.sp.buildStarted(("build", 20, "started"), build)
         self.assertLogged('404: Unable to send Stash status')
+
+
+class TestStashPRCommentPush(unittest.TestCase, ReporterTestMixin, LoggingMixin):
+
+    @defer.inlineCallbacks
+    def setupReporter(self, **kwargs):
+        # ignore config error if txrequests is not installed
+        self.patch(config, '_errors', Mock())
+        self.master = fakemaster.make_master(testcase=self,
+                                             wantData=True, wantDb=True, wantMq=True)
+
+        self._http = yield fakehttpclientservice.HTTPClientService.getFakeService(
+            self.master, self,
+            'serv', auth=('username', 'passwd'))
+        self.sp = sp = StashPRCommentPush("serv", "username", "passwd", **kwargs)
+        yield sp.setServiceParent(self.master)
+        yield self.master.startService()
+
+    @defer.inlineCallbacks
+    def tearDown(self):
+        yield self.master.stopService()
