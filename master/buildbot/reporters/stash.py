@@ -56,6 +56,7 @@ class StashStatusPush(http.HttpStatusPushBase):
         props = Properties.fromDict(build['properties'])
         results = build['results']
         got_revision = props.getProperty('got_revision', None)
+        current_got_revision = got_revision
         if build['complete']:
             status = STASH_SUCCESSFUL if results == SUCCESS else STASH_FAILED
             description = self.endDescription
@@ -65,8 +66,6 @@ class StashStatusPush(http.HttpStatusPushBase):
         for sourcestamp in build['buildset']['sourcestamps']:
             if isinstance(got_revision, dict):
                 current_got_revision = got_revision[sourcestamp['codebase']]
-            else:
-                current_got_revision = got_revision
             sha = sourcestamp['revision'] or current_got_revision
             if sha is None:
                 log.error("Unable to get commit hash")
@@ -97,15 +96,10 @@ class StashPRCommentPush(http.HttpStatusPushBase):
     name = "StashPRCommentPush"
 
     @defer.inlineCallbacks
-    def reconfigService(self, base_url, user, password, text=None, statusName=None,
-                        startDescription=None, endDescription=None,
-                        verbose=False, **kwargs):
+    def reconfigService(self, base_url, user, password, text=None, verbose=False, **kwargs):
         yield http.HttpStatusPushBase.reconfigService(self, wantProperties=True,
                                                       **kwargs)
         self.text = text or Interpolate('Builder: %(prop:buildername)s Status: %(prop:statustext)s')
-        self.statusName = statusName
-        self.endDescription = endDescription or 'Build done.'
-        self.startDescription = startDescription or 'Build started.'
         self.verbose = verbose
         self._http = yield httpclientservice.HTTPClientService.getService(
             self.master, base_url, auth=(user, password))
@@ -142,6 +136,6 @@ class StashPRCommentPush(http.HttpStatusPushBase):
             log.info('{comment_text} sent to {pr_url}', comment_text=comment_text, pr_url=pr_url)
         else:
             content = yield response.content()
-            log.error("{code}: Unable to send any comment: {content}",
+            log.error("{code}: Unable to send a comment: {content}",
                       code=response.code, content=content)
         defer.returnValue(None)
