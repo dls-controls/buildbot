@@ -1042,10 +1042,7 @@ StashPRCommentPush
 
         :url: link to the build page
         :statustext: ``SUCCESS`` or ``FAILED`` according to the build status
-        :mergedlink: link/s to the merge commit/s
 
-    :param renderable string startDescription: Custom start message (default: 'Build started.')
-    :param renderable string endDescription: Custom end message (default: 'Build done.')
     :param list builders: Only send update for specified builders.
 
 .. Note::
