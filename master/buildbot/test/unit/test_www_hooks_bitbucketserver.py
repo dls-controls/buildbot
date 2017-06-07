@@ -731,4 +731,12 @@ class TestChangeHookConfiguredWithBitbucketServer(unittest.TestCase):
                                                    ['project']
                                                    ['key']}}
         yield self._testCodebase('pullrequest:updated', 'CI')
-        
+
+    @defer.inlineCallbacks
+    def testHookWithUnhandledEvent(self):
+        request = _prepare_request(
+                    pushJsonPayload,
+                    headers={_HEADER_EVENT : 'invented:event'})
+        yield request.test_render(self.change_hook)
+        self.assertEqual(len(self.change_hook.master.addedChanges), 0)
+        self.assertEqual(request.written, "Unknown event: 'invented_event'")
