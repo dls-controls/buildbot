@@ -803,14 +803,14 @@ class TestChangeHookConfiguredWithGitChange(unittest.TestCase):
         self.assertEqual(change['codebase'], expected_codebase)
 
     @defer.inlineCallbacks
-    def testHookWithChangeAndFixedCodebaseOnPushEvent(self):
+    def testHookWithCodebaseValueOnPushEvent(self):
         self.change_hook.dialects = {'bitbucketserver' :
                                          {'codebase' : 'super-codebase'}}
         yield self._checkCodebase('repo:push', 'super-codebase')
 
 
     @defer.inlineCallbacks
-    def testHookWithChangeAndCodebaseFunctionOnPushEvent(self):
+    def testHookWithCodebaseFunctionOnPushEvent(self):
         self.change_hook.dialects = {'bitbucketserver':
                                          {'codebase': lambda payload :
                                             payload['repository']
@@ -819,13 +819,13 @@ class TestChangeHookConfiguredWithGitChange(unittest.TestCase):
         yield self._checkCodebase('repo:push', 'CI')
 
     @defer.inlineCallbacks
-    def testHookWithChangeAndFixedCodebaseOnPullEvent(self):
+    def testHookWithCodebaseValueOnPullEvent(self):
         self.change_hook.dialects = {'bitbucketserver' :
                                          {'codebase' : 'super-codebase'}}
         yield self._checkCodebase('pullrequest:updated', 'super-codebase')
 
     @defer.inlineCallbacks
-    def testHookWithChangeAndCodebaseFunctionOnPullEvent(self):
+    def testHookWithCodebaseFunctionOnPullEvent(self):
         self.change_hook.dialects = {'bitbucketserver':
                                          {'codebase': lambda payload :
                                             payload['repository']
