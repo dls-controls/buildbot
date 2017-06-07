@@ -583,7 +583,7 @@ def _prepare_request(payload, headers=None, change_dict=None):
     return request
 
 
-class TestChangeHookConfiguredWithBitbucketServerChange(unittest.TestCase):
+class TestChangeHookConfiguredWithBitbucketServer(unittest.TestCase):
 
     """Unit tests for Bitbucket Server Change Hook
     """
@@ -688,3 +688,47 @@ class TestChangeHookConfiguredWithBitbucketServerChange(unittest.TestCase):
         self._testPullRequest(change)
         self.assertEqual(change['branch'], 'refs/heads/master')
         self.assertEqual(change['category'], 'pull-fulfilled')
+
+    @defer.inlineCallbacks
+    def _testCodebase(self, event_type, expected_codebase):
+        payloads = {'repo:push' : pushJsonPayload,
+                    'pullrequest:updated' : pullRequestUpdatedJsonPayload}
+        request = _prepare_request(
+            payloads[event_type],
+            headers={_HEADER_EVENT: event_type})
+        yield request.test_render(self.change_hook)
+        self.assertEqual(len(self.change_hook.master.addedChanges), 1)
+        change = self.change_hook.master.addedChanges[0]
+        self.assertEqual(change['codebase'], expected_codebase)
+
+    @defer.inlineCallbacks
+    def testHookWithChangeAndFixedCodebaseOnPushEvent(self):
+        self.change_hook.dialects = {'bitbucketserver' :
+                                         {'codebase' : 'super-codebase'}}
+        yield self._testCodebase('repo:push', 'super-codebase')
+
+
+    @defer.inlineCallbacks
+    def testHookWithChangeAndCodebaseFunctionOnPushEvent(self):
+        self.change_hook.dialects = {'bitbucketserver':
+                                         {'codebase': lambda payload :
+                                            payload['repository']
+                                                   ['project']
+                                                   ['key']}}
+        yield self._testCodebase('repo:push', 'CI')
+
+    @defer.inlineCallbacks
+    def testHookWithChangeAndFixedCodebaseOnPullEvent(self):
+        self.change_hook.dialects = {'bitbucketserver' :
+                                         {'codebase' : 'super-codebase'}}
+        yield self._testCodebase('pullrequest:updated', 'super-codebase')
+
+    @defer.inlineCallbacks
+    def testHookWithChangeAndCodebaseFunctionOnPullEvent(self):
+        self.change_hook.dialects = {'bitbucketserver':
+                                         {'codebase': lambda payload :
+                                            payload['repository']
+                                                   ['project']
+                                                   ['key']}}
+        yield self._testCodebase('pullrequest:updated', 'CI')
+        
