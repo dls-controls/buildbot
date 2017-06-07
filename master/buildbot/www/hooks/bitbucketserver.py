@@ -62,6 +62,10 @@ class BitbucketServerEventHandler(object):
         repo_url = repo_url.rstrip('browse')
 
         for payload_change in payload['push']['changes']:
+            if not payload_change['new']:
+                # skip change if deleting a tag or a branch
+                continue
+
             change = {
                 'author': "%s <%s>" %
                     (payload['actor']['displayName'],
