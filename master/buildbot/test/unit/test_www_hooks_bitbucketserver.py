@@ -12,15 +12,14 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 # Copyright Buildbot Team Members
-# Copyright Manba Team
+# Copyright Mamba Team
 
 from __future__ import absolute_import
 from __future__ import print_function
 
-import calendar
 from StringIO import StringIO
 
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet import defer
 from twisted.trial import unittest
 
 import buildbot.www.change_hook as change_hook
@@ -31,7 +30,7 @@ from buildbot.www.hooks.bitbucketserver import _HEADER_CT
 
 _CT_JSON = 'application/json'
 
-gitJsonPayload = """
+pushJsonPayload = """
 {
     "actor":
     {
@@ -44,7 +43,7 @@ gitJsonPayload = """
         "project":
         {
             "key":"~JOHN",
-            "name":"John Smith"
+            "name":"John Project"
         },
             "slug":"good-repo",
         "links":
@@ -98,6 +97,480 @@ gitJsonPayload = """
 }
 """
 
+pushJsonPayload = """
+{
+	"actor": {
+		"username": "John",
+		"displayName": "John Smith"
+	},
+	"repository": {
+		"scmId": "git",
+		"project": {
+			"key": "CI",
+			"name": "Continuous Integration"
+		},
+		"slug": "py-repo",
+		"links": {
+			"self": [
+				{
+					"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+				}
+			]
+		},
+		"public": false,
+		"ownerName": "CI",
+		"owner": {
+			"username": "CI",
+			"displayName": "CI"
+		},
+		"fullName": "CI/py-repo"
+	},
+	"push": {
+		"changes": [
+			{
+				"created": false,
+				"closed": false,
+				"new": {
+					"type": "branch",
+					"name": "branch_1496411680",
+					"target": {
+						"type": "commit",
+						"hash": "793d4754230023d85532f9a38dba3290f959beb4"
+					}
+				},
+				"old": {
+					"type": "branch",
+					"name": "branch_1496411680",
+					"target": {
+						"type": "commit",
+						"hash": "a87e21f7433d8c16ac7be7413483fbb76c72a8ba"
+					}
+				}
+			}
+		]
+	}
+}
+"""
+
+pullRequestCreatedJsonPayload = """
+{
+	"actor": {
+		"username": "John",
+		"displayName": "John Smith"
+	},
+	"pullrequest": {
+		"id": "21",
+		"title": "dot 1496311906",
+		"link": "http://localhost:7990/projects/CI/repos/py-repo/pull-requests/21",
+		"authorLogin": "John Smith",
+		"fromRef": {
+			"repository": {
+				"scmId": "git",
+				"project": {
+					"key": "CI",
+					"name": "Continuous Integration"
+				},
+				"slug": "py-repo",
+				"links": {
+					"self": [
+						{
+							"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+						}
+					]
+				},
+				"public": false,
+				"ownerName": "CI",
+				"owner": {
+					"username": "CI",
+					"displayName": "CI"
+				},
+				"fullName": "CI/py-repo"
+			},
+			"commit": {
+				"message": null,
+				"date": null,
+				"hash": "a87e21f7433d8c16ac7be7413483fbb76c72a8ba",
+				"authorTimestamp": 0
+			},
+			"branch": {
+				"rawNode": "a87e21f7433d8c16ac7be7413483fbb76c72a8ba",
+				"name": "branch_1496411680"
+			}
+		},
+		"toRef": {
+			"repository": {
+				"scmId": "git",
+				"project": {
+					"key": "CI",
+					"name": "Continuous Integration"
+				},
+				"slug": "py-repo",
+				"links": {
+					"self": [
+						{
+							"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+						}
+					]
+				},
+				"public": false,
+				"ownerName": "CI",
+				"owner": {
+					"username": "CI",
+					"displayName": "CI"
+				},
+				"fullName": "CI/py-repo"
+			},
+			"commit": {
+				"message": null,
+				"date": null,
+				"hash": "7aebbb0089c40fce138a6d0b36d2281ea34f37f5",
+				"authorTimestamp": 0
+			},
+			"branch": {
+				"rawNode": "7aebbb0089c40fce138a6d0b36d2281ea34f37f5",
+				"name": "master"
+			}
+		}
+	},
+	"repository": {
+		"scmId": "git",
+		"project": {
+			"key": "CI",
+			"name": "Continuous Integration"
+		},
+		"slug": "py-repo",
+		"links": {
+			"self": [
+				{
+					"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+				}
+			]
+		},
+		"public": false,
+		"ownerName": "CI",
+		"owner": {
+			"username": "CI",
+			"displayName": "CI"
+		},
+		"fullName": "CI/py-repo"
+	}
+}
+"""
+
+pullRequestUpdatedJsonPayload = """
+{
+	"actor": {
+		"username": "John",
+		"displayName": "John Smith"
+	},
+	"pullrequest": {
+		"id": "21",
+		"title": "dot 1496311906",
+		"link": "http://localhost:7990/projects/CI/repos/py-repo/pull-requests/21",
+		"authorLogin": "Buildbot",
+		"fromRef": {
+			"repository": {
+				"scmId": "git",
+				"project": {
+					"key": "CI",
+					"name": "Continuous Integration"
+				},
+				"slug": "py-repo",
+				"links": {
+					"self": [
+						{
+							"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+						}
+					]
+				},
+				"public": false,
+				"ownerName": "CI",
+				"owner": {
+					"username": "CI",
+					"displayName": "CI"
+				},
+				"fullName": "CI/py-repo"
+			},
+			"commit": {
+				"message": null,
+				"date": null,
+				"hash": "793d4754230023d85532f9a38dba3290f959beb4",
+				"authorTimestamp": 0
+			},
+			"branch": {
+				"rawNode": "793d4754230023d85532f9a38dba3290f959beb4",
+				"name": "branch_1496411680"
+			}
+		},
+		"toRef": {
+			"repository": {
+				"scmId": "git",
+				"project": {
+					"key": "CI",
+					"name": "Continuous Integration"
+				},
+				"slug": "py-repo",
+				"links": {
+					"self": [
+						{
+							"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+						}
+					]
+				},
+				"public": false,
+				"ownerName": "CI",
+				"owner": {
+					"username": "CI",
+					"displayName": "CI"
+				},
+				"fullName": "CI/py-repo"
+			},
+			"commit": {
+				"message": null,
+				"date": null,
+				"hash": "7aebbb0089c40fce138a6d0b36d2281ea34f37f5",
+				"authorTimestamp": 0
+			},
+			"branch": {
+				"rawNode": "7aebbb0089c40fce138a6d0b36d2281ea34f37f5",
+				"name": "master"
+			}
+		}
+	},
+	"repository": {
+		"scmId": "git",
+		"project": {
+			"key": "CI",
+			"name": "Continuous Integration"
+		},
+		"slug": "py-repo",
+		"links": {
+			"self": [
+				{
+					"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+				}
+			]
+		},
+		"public": false,
+		"ownerName": "CI",
+		"owner": {
+			"username": "CI",
+			"displayName": "CI"
+		},
+		"fullName": "CI/py-repo"
+	}
+}
+"""
+
+pullRequestRejectedJsonPayload = """
+{
+	"actor": {
+		"username": "John",
+		"displayName": "John Smith"
+	},
+	"pullrequest": {
+		"id": "21",
+		"title": "dot 1496311906",
+		"link": "http://localhost:7990/projects/CI/repos/py-repo/pull-requests/21",
+		"authorLogin": "Buildbot",
+		"fromRef": {
+			"repository": {
+				"scmId": "git",
+				"project": {
+					"key": "CI",
+					"name": "Continuous Integration"
+				},
+				"slug": "py-repo",
+				"links": {
+					"self": [
+						{
+							"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+						}
+					]
+				},
+				"public": false,
+				"ownerName": "CI",
+				"owner": {
+					"username": "CI",
+					"displayName": "CI"
+				},
+				"fullName": "CI/py-repo"
+			},
+			"commit": {
+				"message": null,
+				"date": null,
+				"hash": "793d4754230023d85532f9a38dba3290f959beb4",
+				"authorTimestamp": 0
+			},
+			"branch": {
+				"rawNode": "793d4754230023d85532f9a38dba3290f959beb4",
+				"name": "branch_1496411680"
+			}
+		},
+		"toRef": {
+			"repository": {
+				"scmId": "git",
+				"project": {
+					"key": "CI",
+					"name": "Continuous Integration"
+				},
+				"slug": "py-repo",
+				"links": {
+					"self": [
+						{
+							"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+						}
+					]
+				},
+				"public": false,
+				"ownerName": "CI",
+				"owner": {
+					"username": "CI",
+					"displayName": "CI"
+				},
+				"fullName": "CI/py-repo"
+			},
+			"commit": {
+				"message": null,
+				"date": null,
+				"hash": "7aebbb0089c40fce138a6d0b36d2281ea34f37f5",
+				"authorTimestamp": 0
+			},
+			"branch": {
+				"rawNode": "7aebbb0089c40fce138a6d0b36d2281ea34f37f5",
+				"name": "master"
+			}
+		}
+	},
+	"repository": {
+		"scmId": "git",
+		"project": {
+			"key": "CI",
+			"name": "Continuous Integration"
+		},
+		"slug": "py-repo",
+		"links": {
+			"self": [
+				{
+					"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+				}
+			]
+		},
+		"public": false,
+		"ownerName": "CI",
+		"owner": {
+			"username": "CI",
+			"displayName": "CI"
+		},
+		"fullName": "CI/py-repo"
+	}
+}
+"""
+
+pullRequestFulfilledJsonPayload = """
+{
+	"actor": {
+		"username": "John",
+		"displayName": "John Smith"
+	},
+	"pullrequest": {
+		"id": "21",
+		"title": "Branch 1496411680",
+		"link": "http://localhost:7990/projects/CI/repos/py-repo/pull-requests/21",
+		"authorLogin": "Buildbot",
+		"fromRef": {
+			"repository": {
+				"scmId": "git",
+				"project": {
+					"key": "CI",
+					"name": "Continuous Integration"
+				},
+				"slug": "py-repo",
+				"links": {
+					"self": [
+						{
+							"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+						}
+					]
+				},
+				"public": false,
+				"ownerName": "CI",
+				"owner": {
+					"username": "CI",
+					"displayName": "CI"
+				},
+				"fullName": "CI/py-repo"
+			},
+			"commit": {
+				"message": null,
+				"date": null,
+				"hash": "793d4754230023d85532f9a38dba3290f959beb4",
+				"authorTimestamp": 0
+			},
+			"branch": {
+				"rawNode": "793d4754230023d85532f9a38dba3290f959beb4",
+				"name": "branch_1496411680"
+			}
+		},
+		"toRef": {
+			"repository": {
+				"scmId": "git",
+				"project": {
+					"key": "CI",
+					"name": "Continuous Integration"
+				},
+				"slug": "py-repo",
+				"links": {
+					"self": [
+						{
+							"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+						}
+					]
+				},
+				"public": false,
+				"ownerName": "CI",
+				"owner": {
+					"username": "CI",
+					"displayName": "CI"
+				},
+				"fullName": "CI/py-repo"
+			},
+			"commit": {
+				"message": null,
+				"date": null,
+				"hash": "7aebbb0089c40fce138a6d0b36d2281ea34f37f5",
+				"authorTimestamp": 0
+			},
+			"branch": {
+				"rawNode": "7aebbb0089c40fce138a6d0b36d2281ea34f37f5",
+				"name": "master"
+			}
+		}
+	},
+	"repository": {
+		"scmId": "git",
+		"project": {
+			"key": "CI",
+			"name": "Continuous Integration"
+		},
+		"slug": "py-repo",
+		"links": {
+			"self": [
+				{
+					"href": "http://localhost:7990/projects/CI/repos/py-repo/browse"
+				}
+			]
+		},
+		"public": false,
+		"ownerName": "CI",
+		"owner": {
+			"username": "CI",
+			"displayName": "CI"
+		},
+		"fullName": "CI/py-repo"
+	}
+}
+"""
 
 def _prepare_request(payload, headers=None, change_dict=None):
     headers = headers or {}
@@ -119,29 +592,99 @@ class TestChangeHookConfiguredWithBitbucketServerChange(unittest.TestCase):
         self.change_hook = change_hook.ChangeHookResource(
             dialects={'bitbucketserver': {}}, master=fakeMasterForHooks())
 
-    @inlineCallbacks
-    def testGitWithChange(self):
+    @defer.inlineCallbacks
+    def testHookWithChangeOnPushEvent(self):
 
-        request = _prepare_request(gitJsonPayload, headers={_HEADER_EVENT :
-            "repo:push"})
+        request = _prepare_request(
+                    pushJsonPayload,
+                    headers={_HEADER_EVENT : 'repo:push'})
 
         yield request.test_render(self.change_hook)
 
         self.assertEqual(len(self.change_hook.master.addedChanges), 1)
-        commit = self.change_hook.master.addedChanges[0]
+        change = self.change_hook.master.addedChanges[0]
+        self.assertEqual(
+            change['repository'],
+            'http://localhost:7990/projects/CI/repos/py-repo/')
+        self.assertEqual(change['author'], 'John Smith <John>')
+        self.assertEqual(change['project'], 'Continuous Integration')
+        self.assertEqual(change['revision'],
+                         '793d4754230023d85532f9a38dba3290f959beb4')
+        self.assertEqual(
+            change['comments'], 'Bitbucket Server commit '
+                                '793d4754230023d85532f9a38dba3290f959beb4')
+        self.assertEqual(change['branch'], 'refs/heads/branch_1496411680')
+        self.assertEqual(
+            change['revlink'],
+            'http://localhost:7990/projects/CI/repos/py-repo/commits/'
+            '793d4754230023d85532f9a38dba3290f959beb4')
+        self.assertEqual(change['category'], 'push')
 
-        # self.assertEqual(commit['files'], ['somefile.py'])
+    def _testPullRequest(self, change):
         self.assertEqual(
-            commit['repository'],
-            'http://localhost:7990/users/john/repos/good-repo/')
-        self.assertEqual(
-           commit['author'], 'John Smith <John>')
-        self.assertEqual(
-            commit['revision'], 'd156103f161e80ea351023e5e8d9bcb86f37924e')
-        self.assertEqual(
-            commit['comments'], 'Bitbucket Server commit d156103f161e80ea351023e5e8d9bcb86f37924e')
-        self.assertEqual(commit['branch'], 'master')
-        self.assertEqual(
-            commit['revlink'],
-            'http://localhost:7990/users/john/repos/good-repo/commits/d156103f161e80ea351023e5e8d9bcb86f37924e')
+            change['repository'],
+            'http://localhost:7990/projects/CI/repos/py-repo/')
+        self.assertEqual(change['author'], 'John Smith <John>')
+        self.assertEqual(change['project'], 'Continuous Integration')
+        self.assertEqual(change['comments'],
+                         'Bitbucket Server Pull Request #21')
+        self.assertEqual(change['revlink'],
+                         'http://localhost:7990/projects/'
+                         'CI/repos/py-repo/pull-requests/21')
+        self.assertEqual(change['revision'], None)
 
+    @defer.inlineCallbacks
+    def testHookWithChangeOnPullRequestCreated(self):
+        request = _prepare_request(
+                    pullRequestCreatedJsonPayload,
+                    headers={_HEADER_EVENT : 'pullrequest:created'})
+
+        yield request.test_render(self.change_hook)
+
+        self.assertEqual(len(self.change_hook.master.addedChanges), 1)
+        change = self.change_hook.master.addedChanges[0]
+        self._testPullRequest(change)
+        self.assertEqual(change['branch'], 'refs/pull-requests/21/merge')
+        self.assertEqual(change['category'], 'pull-created')
+
+    @defer.inlineCallbacks
+    def testHookWithChangeOnPullRequestUpdated(self):
+        request = _prepare_request(
+                    pullRequestUpdatedJsonPayload,
+                    headers={_HEADER_EVENT : 'pullrequest:updated'})
+
+        yield request.test_render(self.change_hook)
+
+        self.assertEqual(len(self.change_hook.master.addedChanges), 1)
+        change = self.change_hook.master.addedChanges[0]
+        self._testPullRequest(change)
+        self.assertEqual(change['branch'], 'refs/pull-requests/21/merge')
+        self.assertEqual(change['category'], 'pull-updated')
+
+    @defer.inlineCallbacks
+    def testHookWithChangeOnPullRequestRejected(self):
+        request = _prepare_request(
+                    pullRequestRejectedJsonPayload,
+                    headers={_HEADER_EVENT : 'pullrequest:rejected'})
+
+        yield request.test_render(self.change_hook)
+
+        self.assertEqual(len(self.change_hook.master.addedChanges), 1)
+        change = self.change_hook.master.addedChanges[0]
+        self._testPullRequest(change)
+        self.assertEqual(change['branch'], 'refs/heads/branch_1496411680')
+        self.assertEqual(change['category'], 'pull-rejected')
+
+    @defer.inlineCallbacks
+    def testHookWithChangeOnPullRequestFulfilled(self):
+        request = _prepare_request(
+                    pullRequestFulfilledJsonPayload,
+                    headers={_HEADER_EVENT : 'pullrequest:fulfilled'})
+
+        yield request.test_render(self.change_hook)
+
+        self.assertEqual(len(self.change_hook.master.addedChanges), 1)
+        change = self.change_hook.master.addedChanges[0]
+        self._testPullRequest(change)
+        self.assertEqual(change['branch'], 'refs/heads/master')
+        self.assertEqual(change['category'], 'pull-fulfilled')
