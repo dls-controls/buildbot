@@ -58,16 +58,18 @@ class BitbucketServerEventHandler(object):
     def handle_repo_push(self, payload):
         changes = []
         project = payload['repository']['project']['name']
-        repo_url = payload['repository']['links']['self'][0]['href'].rstrip('browse')
+        repo_url = payload['repository']['links']['self'][0]['href']
+        repo_url = repo_url.rstrip('browse')
 
         for payload_change in payload['push']['changes']:
             change = {
                 'author': "%s <%s>" %
-                (payload['actor']['displayName'], payload['actor']['username']),
+                    (payload['actor']['displayName'],
+                     payload['actor']['username']),
                 'comments': 'Bitbucket Server commit %s' %
                     payload_change['new']['target']['hash'],
                 'revision': payload_change['new']['target']['hash'],
-                'branch': payload_change['new']['name'],
+                'branch': 'refs/heads/%s' % payload_change['new']['name'],
                 'revlink': '%scommits/%s' %
                     (repo_url, payload_change['new']['target']['hash']),
                 'repository': repo_url,
@@ -89,33 +91,38 @@ class BitbucketServerEventHandler(object):
     def handle_pullrequest_created(self, payload):
         return self.handle_pullrequest(
                 payload, 
-                "refs/pull-requests/%d/merge" % (int(payload['pullrequest']['id']),),
-                "pull-created", None)
+                "refs/pull-requests/%d/merge" %
+                    (int(payload['pullrequest']['id']),),
+                "pull-created")
 
     def handle_pullrequest_updated(self, payload):
         return self.handle_pullrequest(
                 payload, 
-                "refs/pull-requests/%d/merge" % (int(payload['pullrequest']['id']),),
-                "pull-updated", None)
+                "refs/pull-requests/%d/merge" %
+                    (int(payload['pullrequest']['id']),),
+                "pull-updated")
 
     def handle_pullrequest_fulfilled(self, payload):
         return self.handle_pullrequest(
                 payload,
-                "refs/heads/%s" % (payload['pullrequest']['toRef']['branch']['name'],),
-                 "pull-fulfilled", None)
+                "refs/heads/%s" %
+                    (payload['pullrequest']['toRef']['branch']['name'],),
+                "pull-fulfilled")
 
     def handle_pullrequest_rejected(self, payload):
         return self.handle_pullrequest(
                 payload,
-                "refs/heads/%s" % (payload['pullrequest']['fromRef']['branch']['name'],),
-                 "pull-rejected", payload['pullrequest']['fromRef']['commit']['hash'])
+                "refs/heads/%s" %
+                    (payload['pullrequest']['fromRef']['branch']['name'],),
+                 "pull-rejected")
 
-    def handle_pullrequest(self, payload, refname, category, revision):
+    def handle_pullrequest(self, payload, refname, category):
         changes = []
         pr_number = int(payload['pullrequest']['id'])
-        repo_url = payload['repository']['links']['self'][0]['href'].rstrip('browse')
+        repo_url = payload['repository']['links']['self'][0]['href']
+        repo_url = repo_url.rstrip('browse')
         change = {
-            'revision': revision,
+            'revision': None,
             'revlink': payload['pullrequest']['link'],
             'repository': repo_url, 
             'branch' : refname,
@@ -124,7 +131,7 @@ class BitbucketServerEventHandler(object):
             'author': '%s <%s>' % (payload['actor']['displayName'],
                                    payload['actor']['username']),
             'comments': 'Bitbucket Server Pull Request #%d' % (pr_number, ),
-            'properties' : { "pullrequesturl" : payload['pullrequest']['link'] }
+            'properties' : { 'pullrequesturl' : payload['pullrequest']['link'] }
         }
 
         if callable(self._codebase):
@@ -134,8 +141,8 @@ class BitbucketServerEventHandler(object):
 
         changes.append(change)
 
-        log.msg("Received %d changes from Bitbucket Server PR #%d" % (
-            len(changes), pr_number))
+        log.msg("Received %d changes from Bitbucket Server PR #%d" %
+                    (len(changes), pr_number))
         return changes, payload['repository']['scmId']
 
 
