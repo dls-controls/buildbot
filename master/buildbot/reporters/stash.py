@@ -32,6 +32,8 @@ log = Logger()
 STASH_INPROGRESS = 'INPROGRESS'
 STASH_SUCCESSFUL = 'SUCCESSFUL'
 STASH_FAILED = 'FAILED'
+STASH_STATUS_API_URL = '/rest/build-status/1.0/commits/{sha}'
+STASH_COMMENT_API_URL = '/rest/api/1.0/{path}/comments'
 
 
 class StashStatusPush(http.HttpStatusPushBase):
@@ -80,8 +82,8 @@ class StashStatusPush(http.HttpStatusPushBase):
                 payload['description'] = yield props.render(description)
             if self.statusName:
                 payload['name'] = yield props.render(self.statusName)
-            response = yield self._http.post('/rest/build-status/1.0/commits/' + sha,
-                                             json=payload)
+            response = yield self._http.post(STASH_STATUS_API_URL
+                                                .format(sha=sha), json=payload)
             if response.code == 204:
                 if self.verbose:
                     log.info('Status "{status}" sent for {sha}.',
@@ -99,15 +101,15 @@ class StashPRCommentPush(http.HttpStatusPushBase):
     def reconfigService(self, base_url, user, password, text=None, verbose=False, **kwargs):
         yield http.HttpStatusPushBase.reconfigService(self, wantProperties=True,
                                                       **kwargs)
-        self.text = text or Interpolate('Builder: %(prop:buildername)s Status: %(prop:statustext)s')
+        self.text = text or Interpolate('Builder: %(prop:buildername)s '
+                                        'Status: %(prop:statustext)s')
         self.verbose = verbose
         self._http = yield httpclientservice.HTTPClientService.getService(
             self.master, base_url, auth=(user, password))
 
     @defer.inlineCallbacks
     def send(self, build):
-        if build['complete'] \
-           and build['properties'].has_key("pullrequesturl"):
+        if build['complete'] and build['properties'].has_key("pullrequesturl"):
                 yield self.sendPullRequestComment(build)
 
     @defer.inlineCallbacks
@@ -117,7 +119,7 @@ class StashPRCommentPush(http.HttpStatusPushBase):
         match = re.search("^(http|https)://([^/]+)/(.+)$", pr_url)
 
         if not match:
-            log.error("not valid pull request URL: %s" % (pr_url,))
+            log.error("not valid pull request URL: {url}", url=pr_url)
             defer.returnValue(None)
             return
 
@@ -130,10 +132,11 @@ class StashPRCommentPush(http.HttpStatusPushBase):
         payload = {
                 'text' : comment_text
                 }
-        response = yield self._http.post('/rest/api/1.0/%s/comments' % (path),
-                                          json=payload)
+        response = yield self._http.post(STASH_COMMENT_API_URL
+                                            .format(path=path),json=payload)
         if response.code == 201:
-            log.info('{comment_text} sent to {pr_url}', comment_text=comment_text, pr_url=pr_url)
+            log.info('{comment_text} sent to {pr_url}',
+                     comment_text=comment_text, pr_url=pr_url)
         else:
             content = yield response.content()
             log.error("{code}: Unable to send a comment: {content}",
