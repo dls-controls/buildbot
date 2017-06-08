@@ -24,6 +24,7 @@ from buildbot.process.results import SUCCESS
 from buildbot.reporters import http
 from buildbot.util import httpclientservice
 from buildbot.util.logger import Logger
+import re
 
 log = Logger()
 
@@ -31,6 +32,8 @@ log = Logger()
 STASH_INPROGRESS = 'INPROGRESS'
 STASH_SUCCESSFUL = 'SUCCESSFUL'
 STASH_FAILED = 'FAILED'
+STASH_STATUS_API_URL = '/rest/build-status/1.0/commits/{sha}'
+STASH_COMMENT_API_URL = '/rest/api/1.0/{path}/comments'
 
 
 class StashStatusPush(http.HttpStatusPushBase):
@@ -54,6 +57,8 @@ class StashStatusPush(http.HttpStatusPushBase):
     def send(self, build):
         props = Properties.fromDict(build['properties'])
         results = build['results']
+        got_revision = props.getProperty('got_revision', None)
+        current_got_revision = got_revision
         if build['complete']:
             status = STASH_SUCCESSFUL if results == SUCCESS else STASH_FAILED
             description = self.endDescription
@@ -61,7 +66,12 @@ class StashStatusPush(http.HttpStatusPushBase):
             status = STASH_INPROGRESS
             description = self.startDescription
         for sourcestamp in build['buildset']['sourcestamps']:
-            sha = sourcestamp['revision']
+            if isinstance(got_revision, dict):
+                current_got_revision = got_revision[sourcestamp['codebase']]
+            sha = sourcestamp['revision'] or current_got_revision
+            if sha is None:
+                log.error("Unable to get commit hash")
+                continue
             key = yield props.render(self.key)
             payload = {
                 'state': status,
@@ -72,8 +82,8 @@ class StashStatusPush(http.HttpStatusPushBase):
                 payload['description'] = yield props.render(description)
             if self.statusName:
                 payload['name'] = yield props.render(self.statusName)
-            response = yield self._http.post('/rest/build-status/1.0/commits/' + sha,
-                                             json=payload)
+            response = yield self._http.post(STASH_STATUS_API_URL
+                                                .format(sha=sha), json=payload)
             if response.code == 204:
                 if self.verbose:
                     log.info('Status "{status}" sent for {sha}.',
@@ -82,3 +92,53 @@ class StashStatusPush(http.HttpStatusPushBase):
                 content = yield response.content()
                 log.error("{code}: Unable to send Stash status: {content}",
                           code=response.code, content=content)
+
+
+class StashPRCommentPush(http.HttpStatusPushBase):
+    name = "StashPRCommentPush"
+
+    @defer.inlineCallbacks
+    def reconfigService(self, base_url, user, password, text=None, verbose=False, **kwargs):
+        yield http.HttpStatusPushBase.reconfigService(self, wantProperties=True,
+                                                      **kwargs)
+        self.text = text or Interpolate('Builder: %(prop:buildername)s '
+                                        'Status: %(prop:statustext)s')
+        self.verbose = verbose
+        self._http = yield httpclientservice.HTTPClientService.getService(
+            self.master, base_url, auth=(user, password))
+
+    @defer.inlineCallbacks
+    def send(self, build):
+        if build['complete'] and build['properties'].has_key("pullrequesturl"):
+                yield self.sendPullRequestComment(build)
+
+    @defer.inlineCallbacks
+    def sendPullRequestComment(self, build):
+        props = Properties.fromDict(build['properties'])
+        pr_url = props.getProperty("pullrequesturl")
+        match = re.search("^(http|https)://([^/]+)/(.+)$", pr_url)
+
+        if not match:
+            log.error("not valid pull request URL: {url}", url=pr_url)
+            defer.returnValue(None)
+            return
+
+        path = match.group(3)
+        status = "SUCCESS" if build['results']==SUCCESS else "FAILED"
+        props.setProperty('statustext', status, self.name)
+        props.setProperty('url', build['url'], self.name)
+
+        comment_text = yield props.render(self.text)
+        payload = {
+                'text' : comment_text
+                }
+        response = yield self._http.post(STASH_COMMENT_API_URL
+                                            .format(path=path),json=payload)
+        if response.code == 201:
+            log.info('{comment_text} sent to {pr_url}',
+                     comment_text=comment_text, pr_url=pr_url)
+        else:
+            content = yield response.content()
+            log.error("{code}: Unable to send a comment: {content}",
+                      code=response.code, content=content)
+        defer.returnValue(None)
