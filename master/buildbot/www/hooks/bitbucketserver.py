@@ -137,7 +137,8 @@ class BitbucketServerEventHandler(object):
             'category': category,
             'author': '{} <{}>'.format(payload['actor']['displayName'],
                                        payload['actor']['username']),
-            'comments': 'Bitbucket Server Pull Request #{}'.format(pr_number)
+            'comments': 'Bitbucket Server Pull Request #{}'.format(pr_number),
+            'properties' : {'pullrequesturl' : payload['pullrequest']['link']}
         }
 
         if callable(self._codebase):
