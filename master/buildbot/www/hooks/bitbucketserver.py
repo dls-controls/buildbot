@@ -72,18 +72,17 @@ class BitbucketServerEventHandler(object):
                 continue
 
             change = {
-                'author': "%s <%s>" %
-                    (payload['actor']['displayName'],
-                     payload['actor']['username']),
-                'comments': 'Bitbucket Server commit %s' %
-                    payload_change['new']['target']['hash'],
                 'revision': payload_change['new']['target']['hash'],
-                'branch': 'refs/heads/%s' % payload_change['new']['name'],
-                'revlink': '%scommits/%s' %
-                    (repo_url, payload_change['new']['target']['hash']),
+                'revlink': '{}commits/{}'.format(
+                    repo_url, payload_change['new']['target']['hash']),
                 'repository': repo_url,
-                'category' : 'push',
-                'project': project
+                'author': '{} <{}>'.format(payload['actor']['displayName'],
+                                           payload['actor']['username']),
+                'comments': 'Bitbucket Server commit {}'.format(
+                    payload_change['new']['target']['hash']),
+                'branch': GIT_HEAD_REF.format(payload_change['new']['name']),
+                'project' : project,
+                'category' : 'push'
             }
 
             if callable(self._codebase):
@@ -132,12 +131,12 @@ class BitbucketServerEventHandler(object):
             'revision': None,
             'revlink': payload['pullrequest']['link'],
             'repository': repo_url,
-            'branch' : refname,
-            'project': payload['repository']['project']['name'],
-            'category': category,
             'author': '{} <{}>'.format(payload['actor']['displayName'],
                                        payload['actor']['username']),
             'comments': 'Bitbucket Server Pull Request #{}'.format(pr_number),
+            'branch' : refname,
+            'project': payload['repository']['project']['name'],
+            'category': category,
             'properties' : {'pullrequesturl' : payload['pullrequest']['link']}
         }
 
