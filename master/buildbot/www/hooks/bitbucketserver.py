@@ -13,8 +13,6 @@
 #
 # Copyright Buildbot Team Members
 # Copyright Mamba Team
-import logging
-from dateutil.parser import parse as dateparse
 
 from twisted.python import log
 
