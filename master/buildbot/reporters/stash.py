@@ -84,8 +84,8 @@ class StashStatusPush(http.HttpStatusPushBase):
                 payload['description'] = yield props.render(description)
             if self.statusName:
                 payload['name'] = yield props.render(self.statusName)
-            response = yield self._http.post(STASH_STATUS_API_URL
-                                                .format(sha=sha), json=payload)
+            response = yield self._http.post(
+                STASH_STATUS_API_URL.format(sha=sha), json=payload)
             if response.code == 204:
                 if self.verbose:
                     log.info('Status "{status}" sent for {sha}.',
