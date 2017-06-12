@@ -35,6 +35,8 @@ STASH_SUCCESSFUL = 'SUCCESSFUL'
 STASH_FAILED = 'FAILED'
 STASH_STATUS_API_URL = '/rest/build-status/1.0/commits/{sha}'
 STASH_COMMENT_API_URL = '/rest/api/1.0{path}/comments'
+HTTP_PROCESSED = 204
+HTTP_CREATED = 201
 
 
 class StashStatusPush(http.HttpStatusPushBase):
@@ -86,7 +88,7 @@ class StashStatusPush(http.HttpStatusPushBase):
                 payload['name'] = yield props.render(self.statusName)
             response = yield self._http.post(
                 STASH_STATUS_API_URL.format(sha=sha), json=payload)
-            if response.code == 204:
+            if response.code == HTTP_PROCESSED:
                 if self.verbose:
                     log.info('Status "{status}" sent for {sha}.',
                              status=status, sha=sha)
@@ -130,7 +132,7 @@ class StashPRCommentPush(http.HttpStatusPushBase):
         response = yield self._http.post(
             STASH_COMMENT_API_URL.format(path=path),json=payload)
 
-        if response.code == 201:
+        if response.code == HTTP_CREATED:
             if self.verbose:
                 log.info('{comment} sent to {url}',
                          comment=comment_text, url=pr_url)
