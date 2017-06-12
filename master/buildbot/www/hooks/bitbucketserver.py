@@ -119,7 +119,6 @@ class BitbucketServerEventHandler(object):
             "pull-rejected")
 
     def handle_pullrequest(self, payload, refname, category):
-        changes = []
         pr_number = int(payload['pullrequest']['id'])
         repo_url = payload['repository']['links']['self'][0]['href']
         repo_url = repo_url.rstrip('browse')
@@ -141,9 +140,7 @@ class BitbucketServerEventHandler(object):
         elif self._codebase is not None:
             change['codebase'] = self._codebase
 
-        changes.append(change)
-
-        return changes, payload['repository']['scmId']
+        return [change], payload['repository']['scmId']
 
 
 def getChanges(request, options=None):
