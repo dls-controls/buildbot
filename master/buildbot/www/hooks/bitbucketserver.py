@@ -90,8 +90,6 @@ class BitbucketServerEventHandler(object):
 
             changes.append(change)
 
-        log.msg('Received {} changes from Bitbucket Server'
-                .format(len(changes)))
         return (changes, payload['repository']['scmId'])
 
     def handle_pullrequest_created(self, payload):
@@ -145,8 +143,6 @@ class BitbucketServerEventHandler(object):
 
         changes.append(change)
 
-        log.msg("Received a change from Bitbucket Server PR #{}"
-                .format(pr_number))
         return changes, payload['repository']['scmId']
 
 
