@@ -36,7 +36,7 @@ class BitbucketServerEventHandler(object):
         log.msg("Processing event {header}: {event}"
                 .format(header=_HEADER_EVENT, event=event_type))
         event_type = event_type.replace(":", "_")
-        handler = getattr(self, 'handle_%s' % event_type, None)
+        handler = getattr(self, 'handle_{}'.format(event_type), None)
 
         if handler is None:
             raise ValueError('Unknown event: {}'.format(event_type))
@@ -144,12 +144,6 @@ class BitbucketServerEventHandler(object):
 
 
 def getChanges(request, options=None):
-    """
-    Process the Bitbucket Server webhook event.
-
-    :param twisted.web.server.Request request: the http request object
-
-    """
     if not isinstance(options, dict):
         options = {}
 

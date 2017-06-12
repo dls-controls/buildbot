@@ -741,7 +741,6 @@ class TestChangeHookConfiguredWithGitChange(unittest.TestCase):
                                          {'codebase' : 'super-codebase'}}
         yield self._checkCodebase('repo:push', 'super-codebase')
 
-
     @defer.inlineCallbacks
     def testHookWithCodebaseFunctionOnPushEvent(self):
         self.change_hook.dialects = {'bitbucketserver':
