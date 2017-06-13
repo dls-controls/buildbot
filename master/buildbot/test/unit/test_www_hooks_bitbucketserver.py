@@ -743,11 +743,10 @@ class TestChangeHookConfiguredWithGitChange(unittest.TestCase):
 
     @defer.inlineCallbacks
     def testHookWithCodebaseFunctionOnPushEvent(self):
-        self.change_hook.dialects = {'bitbucketserver':
-                                         {'codebase': lambda payload :
-                                            payload['repository']
-                                                   ['project']
-                                                   ['key']}}
+        self.change_hook.dialects = {
+            'bitbucketserver': {
+                'codebase':
+                    lambda payload : payload['repository']['project']['key']}}
         yield self._checkCodebase('repo:push', 'CI')
 
     @defer.inlineCallbacks
@@ -758,11 +757,10 @@ class TestChangeHookConfiguredWithGitChange(unittest.TestCase):
 
     @defer.inlineCallbacks
     def testHookWithCodebaseFunctionOnPullEvent(self):
-        self.change_hook.dialects = {'bitbucketserver':
-                                         {'codebase': lambda payload :
-                                            payload['repository']
-                                                   ['project']
-                                                   ['key']}}
+        self.change_hook.dialects = {
+            'bitbucketserver': {
+                'codebase':
+                    lambda payload : payload['repository']['project']['key']}}
         yield self._checkCodebase('pullrequest:updated', 'CI')
 
     @defer.inlineCallbacks
